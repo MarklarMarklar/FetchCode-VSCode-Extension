@@ -7,6 +7,8 @@
 
 FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationlab.fetch.ai/resources/docs/fetchcoder/overview) AI coding agent into Visual Studio Code, providing a Cursor-like experience with chat, compose mode, and intelligent code actions.
 
+> **⚠️ Important:** This extension requires a custom REST API server (included in the `api-server/` directory) because the standard `fetchcoder serve` command doesn't implement the necessary REST endpoints. See [Prerequisites](#-prerequisites) below for setup instructions.
+
 ## ✨ Features
 
 ### 💬 Interactive Chat Panel
@@ -43,11 +45,21 @@ Before using this extension, you need:
    npm install -g @fetchai/fetchcoder
    ```
 
-2. **FetchCoder API server running**:
+2. **FetchCoder REST API server running**:
+   
+   **Important**: The standard `fetchcoder serve` command does not provide the REST API endpoints needed by this extension. Instead, use our custom REST API server:
+   
    ```bash
-   fetchcoder serve
+   # Copy the API server files to ~/.fetchcoder/
+   cp -r api-server/* ~/.fetchcoder/
+   
+   # Start the REST API server
+   ~/.fetchcoder/start-api-server.sh
    ```
+   
    The server will start on `http://localhost:3000` by default.
+   
+   See [api-server/README.md](api-server/README.md) for detailed documentation.
 
 3. **VS Code version 1.80.0 or higher**
 
@@ -158,15 +170,29 @@ FetchCoder comes with default test API keys. For production use, set your own:
 ## 🐛 Troubleshooting
 
 ### "Unable to connect to FetchCoder API"
-**Solution**: Ensure the FetchCoder API server is running:
+**Solution**: Ensure the REST API server is running:
 ```bash
-fetchcoder serve
+~/.fetchcoder/start-api-server.sh
 ```
 
-### Connection on different port
-If running FetchCoder on a different port:
+To verify it's running:
 ```bash
-fetchcoder serve --port 8080
+curl http://localhost:3000/health
+```
+
+### Raw JSON responses in chat
+If you see raw JSON like `{"response":"..."}` instead of formatted text, restart the API server:
+```bash
+~/.fetchcoder/stop-api-server.sh
+~/.fetchcoder/start-api-server.sh
+```
+
+Then reload VSCode window: `Ctrl+Shift+P` → "Developer: Reload Window"
+
+### Connection on different port
+If running the API server on a different port:
+```bash
+PORT=8080 ~/.fetchcoder/start-api-server.sh
 ```
 Then update VS Code settings:
 ```json
