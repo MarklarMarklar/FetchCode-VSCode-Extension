@@ -1,0 +1,220 @@
+{
+  "name": "fetchcoder-vscode",
+  "displayName": "FetchCoder",
+  "description": "AI coding assistant powered by FetchCoder - chat, compose, and code with AI",
+  "version": "0.1.0",
+  "publisher": "fetchai",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/fetchai/fetchcoder-vscode.git"
+  },
+  "engines": {
+    "vscode": "^1.80.0"
+  },
+  "categories": [
+    "Machine Learning",
+    "Programming Languages",
+    "Snippets",
+    "Other"
+  ],
+  "keywords": [
+    "ai",
+    "assistant",
+    "copilot",
+    "fetchcoder",
+    "fetch.ai",
+    "code generation",
+    "refactoring"
+  ],
+  "activationEvents": [
+    "onStartupFinished"
+  ],
+  "main": "./out/extension.js",
+  "contributes": {
+    "commands": [
+      {
+        "command": "fetchcoder.openChat",
+        "title": "FetchCoder: Open Chat",
+        "icon": "$(comment-discussion)"
+      },
+      {
+        "command": "fetchcoder.openCompose",
+        "title": "FetchCoder: Open Compose Mode",
+        "icon": "$(edit)"
+      },
+      {
+        "command": "fetchcoder.sendSelection",
+        "title": "FetchCoder: Send Selection to Chat"
+      },
+      {
+        "command": "fetchcoder.explain",
+        "title": "FetchCoder: Explain Code"
+      },
+      {
+        "command": "fetchcoder.refactor",
+        "title": "FetchCoder: Refactor Code"
+      },
+      {
+        "command": "fetchcoder.fix",
+        "title": "FetchCoder: Fix Code"
+      },
+      {
+        "command": "fetchcoder.switchAgent",
+        "title": "FetchCoder: Switch Agent"
+      },
+      {
+        "command": "fetchcoder.clearHistory",
+        "title": "FetchCoder: Clear Chat History"
+      },
+      {
+        "command": "fetchcoder.checkConnection",
+        "title": "FetchCoder: Check API Connection"
+      }
+    ],
+    "keybindings": [
+      {
+        "command": "fetchcoder.openChat",
+        "key": "ctrl+shift+f c",
+        "mac": "cmd+shift+f c"
+      },
+      {
+        "command": "fetchcoder.openCompose",
+        "key": "ctrl+shift+f m",
+        "mac": "cmd+shift+f m"
+      },
+      {
+        "command": "fetchcoder.sendSelection",
+        "key": "ctrl+shift+f s",
+        "mac": "cmd+shift+f s"
+      },
+      {
+        "command": "fetchcoder.explain",
+        "key": "ctrl+shift+f e",
+        "mac": "cmd+shift+f e"
+      },
+      {
+        "command": "fetchcoder.refactor",
+        "key": "ctrl+shift+f r",
+        "mac": "cmd+shift+f r"
+      },
+      {
+        "command": "fetchcoder.fix",
+        "key": "ctrl+shift+f f",
+        "mac": "cmd+shift+f f"
+      },
+      {
+        "command": "fetchcoder.switchAgent",
+        "key": "ctrl+shift+f a",
+        "mac": "cmd+shift+f a"
+      }
+    ],
+    "configuration": {
+      "title": "FetchCoder",
+      "properties": {
+        "fetchcoder.apiUrl": {
+          "type": "string",
+          "default": "http://localhost:3000",
+          "description": "FetchCoder API server URL"
+        },
+        "fetchcoder.defaultAgent": {
+          "type": "string",
+          "default": "general",
+          "enum": [
+            "general",
+            "build",
+            "plan",
+            "agentverse"
+          ],
+          "description": "Default agent to use for requests"
+        },
+        "fetchcoder.autoContextFiles": {
+          "type": "number",
+          "default": 5,
+          "description": "Number of relevant files to include automatically in context"
+        },
+        "fetchcoder.enableInlineActions": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable inline code actions and quick fixes"
+        },
+        "fetchcoder.streamResponses": {
+          "type": "boolean",
+          "default": true,
+          "description": "Enable streaming responses for real-time chat"
+        }
+      }
+    },
+    "viewsContainers": {
+      "activitybar": [
+        {
+          "id": "fetchcoder",
+          "title": "FetchCoder",
+          "icon": "$(robot)"
+        }
+      ]
+    },
+    "views": {
+      "fetchcoder": [
+        {
+          "id": "fetchcoderHistory",
+          "name": "Chat History"
+        }
+      ]
+    },
+    "menus": {
+      "editor/context": [
+        {
+          "command": "fetchcoder.sendSelection",
+          "when": "editorHasSelection",
+          "group": "fetchcoder@1"
+        },
+        {
+          "command": "fetchcoder.explain",
+          "when": "editorHasSelection",
+          "group": "fetchcoder@2"
+        },
+        {
+          "command": "fetchcoder.refactor",
+          "when": "editorHasSelection",
+          "group": "fetchcoder@3"
+        },
+        {
+          "command": "fetchcoder.fix",
+          "when": "editorHasSelection",
+          "group": "fetchcoder@4"
+        }
+      ],
+      "commandPalette": [
+        {
+          "command": "fetchcoder.sendSelection",
+          "when": "editorHasSelection"
+        }
+      ]
+    }
+  },
+  "scripts": {
+    "vscode:prepublish": "npm run compile",
+    "compile": "tsc -p ./",
+    "watch": "tsc -watch -p ./",
+    "pretest": "npm run compile && npm run lint",
+    "lint": "eslint src --ext ts",
+    "test": "node ./out/test/runTest.js"
+  },
+  "devDependencies": {
+    "@types/glob": "^8.1.0",
+    "@types/mocha": "^10.0.1",
+    "@types/node": "20.x",
+    "@types/vscode": "^1.80.0",
+    "@typescript-eslint/eslint-plugin": "^6.4.1",
+    "@typescript-eslint/parser": "^6.4.1",
+    "@vscode/test-electron": "^2.3.4",
+    "eslint": "^8.47.0",
+    "glob": "^10.3.3",
+    "mocha": "^10.2.0",
+    "typescript": "^5.1.6"
+  },
+  "dependencies": {
+    "marked": "^9.0.0"
+  }
+}
+

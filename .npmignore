@@ -1,0 +1,23 @@
+# Source files
+src/
+test/
+.vscode/
+.vscode-test/
+
+# Configuration
+tsconfig.json
+.eslintrc.json
+.gitignore
+
+# Documentation (keep README and LICENSE)
+CONTRIBUTING.md
+
+# Development files
+*.log
+*.map
+node_modules/
+
+# Build artifacts that aren't needed
+.DS_Store
+Thumbs.db
+
