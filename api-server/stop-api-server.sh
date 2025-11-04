@@ -10,7 +10,8 @@ YELLOW='\033[1;33m'
 GREEN='\033[0;32m'
 NC='\033[0m'
 
-PID_FILE="$HOME/.fetchcoder/api-server.pid"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PID_FILE="$SCRIPT_DIR/api-server.pid"
 
 if [ ! -f "$PID_FILE" ]; then
     echo -e "${YELLOW}No PID file found. Checking for running processes...${NC}"

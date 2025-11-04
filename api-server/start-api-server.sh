@@ -14,10 +14,10 @@ YELLOW='\033[1;33m'
 NC='\033[0m' # No Color
 
 # Configuration
-API_SERVER_DIR="$HOME/.fetchcoder"
-API_SERVER_SCRIPT="$API_SERVER_DIR/api-server.js"
-PID_FILE="$API_SERVER_DIR/api-server.pid"
-LOG_FILE="$API_SERVER_DIR/api-server.log"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+API_SERVER_SCRIPT="$SCRIPT_DIR/api-server.js"
+PID_FILE="$SCRIPT_DIR/api-server.pid"
+LOG_FILE="$SCRIPT_DIR/api-server.log"
 PORT="${PORT:-3000}"
 HOST="${HOST:-127.0.0.1}"
 
@@ -38,7 +38,7 @@ if [ -f "$PID_FILE" ]; then
 fi
 
 # Start the server
-cd "$API_SERVER_DIR"
+cd "$SCRIPT_DIR"
 nohup node "$API_SERVER_SCRIPT" > "$LOG_FILE" 2>&1 &
 PID=$!
 
