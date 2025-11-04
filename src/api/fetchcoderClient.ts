@@ -13,6 +13,7 @@ export interface ChatRequest {
         files?: Array<{ path: string; content: string }>;
         selection?: string;
         language?: string;
+        workspacePath?: string;
     };
     history?: ChatMessage[];
 }
@@ -73,7 +74,8 @@ export class FetchCoderClient {
                     message: request.message,
                     agent: request.agent || this.currentAgent,
                     context: request.context,
-                    history: request.history
+                    history: request.history,
+                    workspacePath: request.context?.workspacePath
                 })
             });
 
@@ -110,7 +112,8 @@ export class FetchCoderClient {
                     agent: request.agent || this.currentAgent,
                     context: request.context,
                     history: request.history,
-                    stream: true
+                    stream: true,
+                    workspacePath: request.context?.workspacePath
                 })
             });
 

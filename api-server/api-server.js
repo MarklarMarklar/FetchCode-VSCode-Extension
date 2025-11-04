@@ -14,7 +14,7 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
-const FETCHCODER_BIN = path.join(process.env.HOME, '.fetchcoder', 'bin', 'fetchcoder-backend');
+const FETCHCODER_BIN = path.join(process.env.HOME, '.fetchcoder', 'bin', 'fetchcoder');
 
 // Session storage for managing conversations
 const sessions = new Map();
@@ -48,7 +48,7 @@ function parseBody(req) {
   });
 }
 
-async function executeFetchCoder(message, agent = 'general', context = []) {
+async function executeFetchCoder(message, agent = 'general', context = [], workspacePath = null) {
   return new Promise((resolve, reject) => {
     const args = ['run'];
     
@@ -57,10 +57,14 @@ async function executeFetchCoder(message, agent = 'general', context = []) {
       args.push('--agent', agent);
     }
     
-    log(`Executing: echo "${message}" | ${FETCHCODER_BIN} ${args.join(' ')}`);
+    // Use workspace path if provided, otherwise use current directory
+    const cwd = workspacePath || process.cwd();
+    
+    log(`Executing: echo "${message.substring(0, 50)}..." | ${FETCHCODER_BIN} ${args.join(' ')}`);
+    log(`Working directory: ${cwd}`);
     
     const child = spawn(FETCHCODER_BIN, args, {
-      cwd: process.cwd(),
+      cwd: cwd,
       env: {
         ...process.env,
         HOME: process.env.HOME,
@@ -158,7 +162,7 @@ const server = http.createServer(async (req, res) => {
     // Chat endpoint
     if (req.url === '/api/chat' && req.method === 'POST') {
       const body = await parseBody(req);
-      const { message, agent, context, history, stream } = body;
+      const { message, agent, context, history, stream, workspacePath } = body;
       
       if (!message) {
         res.writeHead(400, { 'Content-Type': 'application/json' });
@@ -166,10 +170,10 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       
-      log(`Chat request - Agent: ${agent || 'general'}, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
+      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
       
       try {
-        const response = await executeFetchCoder(message, agent, context);
+        const response = await executeFetchCoder(message, agent, context, workspacePath);
         
         // If streaming is requested, send as SSE format
         if (stream) {

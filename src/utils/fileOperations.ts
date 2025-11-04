@@ -6,6 +6,7 @@ export interface FileContext {
     files?: Array<{ path: string; content: string }>;
     selection?: string;
     language?: string;
+    workspacePath?: string;
 }
 
 export class FileOperations {
@@ -14,6 +15,12 @@ export class FileOperations {
      */
     static async getWorkspaceContext(): Promise<FileContext> {
         const context: FileContext = {};
+        
+        // Get workspace path
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (workspaceFolder) {
+            context.workspacePath = workspaceFolder.uri.fsPath;
+        }
         
         const editor = vscode.window.activeTextEditor;
         if (editor) {
