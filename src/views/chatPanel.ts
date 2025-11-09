@@ -2,6 +2,8 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import { getFetchCoderClient, ChatMessage, StreamCallback } from '../api/fetchcoderClient';
 import { FileOperations } from '../utils/fileOperations';
+import { FileTracker } from '../utils/fileTracker';
+import { DiffPanel } from './diffPanel';
 
 export class ChatPanel {
     private static currentPanel: ChatPanel | undefined;
@@ -62,6 +64,10 @@ export class ChatPanel {
                     case 'getContext':
                         await this.handleGetContext();
                         break;
+                    case 'ready':
+                        // Send workspace info when webview is ready
+                        await this.sendWorkspaceInfo();
+                        break;
                 }
             },
             null,
@@ -69,8 +75,20 @@ export class ChatPanel {
         );
     }
 
+    private async sendWorkspaceInfo() {
+        const context = await FileOperations.getWorkspaceContext();
+        this.panel.webview.postMessage({
+            type: 'workspaceInfo',
+            workspacePath: context.workspacePath || 'No workspace folder open'
+        });
+    }
+
     private async handleSendMessage(content: string) {
         const client = getFetchCoderClient();
+        
+        // Start tracking file changes FIRST before anything else
+        const fileTracker = FileTracker.getInstance();
+        fileTracker.startTracking();
         
         // Add user message to history
         this.messageHistory.push({
@@ -85,6 +103,12 @@ export class ChatPanel {
 
         // Get workspace context if enabled
         const context = await FileOperations.getWorkspaceContext();
+        
+        // Log workspace path for debugging
+        console.log('FetchCoder: Using workspace path:', context.workspacePath);
+        if (!context.workspacePath) {
+            console.warn('FetchCoder: No workspace path detected! Make sure a folder is opened.');
+        }
 
         try {
             // Stream the response
@@ -94,6 +118,13 @@ export class ChatPanel {
                     this.panel.webview.postMessage({
                         type: 'streamToken',
                         token: token
+                    });
+                },
+                onProgress: (progress: string) => {
+                    // Send progress updates to show tool calls and file operations
+                    this.panel.webview.postMessage({
+                        type: 'progress',
+                        text: progress
                     });
                 },
                 onComplete: (response: string) => {
@@ -106,6 +137,31 @@ export class ChatPanel {
                         type: 'messageComplete',
                         content: response
                     });
+                    
+                    // Get file changes and add to diff panel
+                    setTimeout(async () => {
+                        console.log('FetchCoder: Scanning for file changes...');
+                        const changes = await fileTracker.scanForChanges();
+                        console.log('FetchCoder: Found', changes.length, 'changes');
+                        changes.forEach(c => console.log('  -', c.operation, c.filePath));
+                        
+                        if (changes.length > 0) {
+                            const diffPanel = DiffPanel.createOrShow(this.extensionUri);
+                            changes.forEach(change => diffPanel.addFileChange(change));
+                            
+                            // Show notification
+                            vscode.window.showInformationMessage(
+                                `FetchCoder made ${changes.length} file change(s)`,
+                                'View Changes'
+                            ).then(selection => {
+                                if (selection === 'View Changes') {
+                                    vscode.commands.executeCommand('fetchcoder.openDiff');
+                                }
+                            });
+                        } else {
+                            console.log('FetchCoder: No file changes detected');
+                        }
+                    }, 1500); // Delay to ensure file system operations complete
                 },
                 onError: (error: Error) => {
                     this.panel.webview.postMessage({
@@ -130,8 +186,28 @@ export class ChatPanel {
         }
     }
 
-    private handleClearHistory() {
+    private async handleClearHistory() {
         this.messageHistory = [];
+        
+        // Clear session on server
+        const context = await FileOperations.getWorkspaceContext();
+        const client = getFetchCoderClient();
+        
+        try {
+            await fetch(`${client.getBaseUrl()}/api/session/clear`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    workspacePath: context.workspacePath
+                })
+            });
+            console.log('FetchCoder: Session cleared on server');
+        } catch (error) {
+            console.error('FetchCoder: Failed to clear session on server:', error);
+        }
+        
         this.panel.webview.postMessage({
             type: 'historyCleared'
         });
@@ -151,7 +227,8 @@ export class ChatPanel {
         const context = await FileOperations.getWorkspaceContext();
         this.panel.webview.postMessage({
             type: 'contextLoaded',
-            context: context
+            context: context,
+            workspacePath: context.workspacePath
         });
     }
 

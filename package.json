@@ -69,6 +69,19 @@
       {
         "command": "fetchcoder.checkConnection",
         "title": "FetchCoder: Check API Connection"
+      },
+      {
+        "command": "fetchcoder.checkWorkspace",
+        "title": "FetchCoder: Check Workspace Path"
+      },
+      {
+        "command": "fetchcoder.openDiff",
+        "title": "FetchCoder: View Changes",
+        "icon": "$(diff)"
+      },
+      {
+        "command": "fetchcoder.testScanChanges",
+        "title": "FetchCoder: Test Scan Changes (Debug)"
       }
     ],
     "keybindings": [

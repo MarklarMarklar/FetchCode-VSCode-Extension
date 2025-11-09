@@ -26,6 +26,7 @@ export interface ChatResponse {
 
 export interface StreamCallback {
     onToken: (token: string) => void;
+    onProgress?: (progress: string) => void;
     onComplete: (fullResponse: string) => void;
     onError: (error: Error) => void;
 }
@@ -149,10 +150,31 @@ export class FetchCoderClient {
                         }
                         try {
                             const json = JSON.parse(data);
-                            const token = json.token || json.delta || json.content || '';
-                            if (token) {
-                                fullResponse += token;
-                                callback.onToken(token);
+                            
+                            // Handle different event types
+                            if (json.type === 'progress') {
+                                // Progress update (tool calls, file operations, etc.)
+                                if (callback.onProgress) {
+                                    callback.onProgress(json.text);
+                                }
+                            } else if (json.type === 'content') {
+                                // Content token
+                                const token = json.token || '';
+                                if (token) {
+                                    fullResponse += token;
+                                    callback.onToken(token);
+                                }
+                            } else if (json.type === 'error') {
+                                // Error event
+                                callback.onError(new Error(json.error || 'Unknown error'));
+                                return;
+                            } else {
+                                // Fallback: treat as content
+                                const token = json.token || json.delta || json.content || '';
+                                if (token) {
+                                    fullResponse += token;
+                                    callback.onToken(token);
+                                }
                             }
                         } catch (e) {
                             // Not JSON, treat as plain text

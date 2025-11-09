@@ -174,5 +174,28 @@ export function registerChatCommands(
             );
         })
     );
+
+    // Check Workspace command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.checkWorkspace', async () => {
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            
+            if (workspaceFolder) {
+                const workspacePath = workspaceFolder.uri.fsPath;
+                vscode.window.showInformationMessage(
+                    `✓ FetchCoder workspace: ${workspacePath}`
+                );
+            } else {
+                vscode.window.showWarningMessage(
+                    '⚠ No workspace folder is open. FetchCoder commands will run in the API server\'s directory.',
+                    'Open Folder'
+                ).then(selection => {
+                    if (selection === 'Open Folder') {
+                        vscode.commands.executeCommand('workbench.action.files.openFolder');
+                    }
+                });
+            }
+        })
+    );
 }
 

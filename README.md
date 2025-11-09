@@ -12,11 +12,13 @@ FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationla
 ## ✨ Features
 
 ### 💬 Interactive Chat Panel
-- Real-time streaming responses
+- Real-time streaming responses with progress indicators
 - Syntax-highlighted code blocks
 - Markdown rendering
-- Conversation history
+- Conversation history and context awareness
 - Multiple specialized agents
+- Workspace-aware: automatically works in your project directory
+- Live progress updates showing tool calls and file operations
 
 ### 🎨 Compose Mode
 - Multi-file editing with AI assistance
@@ -35,6 +37,13 @@ FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationla
 - **Build**: Compilation and dependency management
 - **Plan**: Architecture design and planning
 - **Agentverse**: Production-ready Fetch.ai agents
+
+### 📊 Automatic Diff Viewer
+- **Automatic change tracking**: Snapshots workspace before FetchCoder runs
+- **Visual change list**: See all files created, modified, or deleted
+- **Native diff viewing**: Click any change to view side-by-side diff
+- **Real-time updates**: Changes appear automatically after each operation
+- **Change history**: Review all modifications made during your session
 
 ## 📋 Prerequisites
 
@@ -109,6 +118,13 @@ vsce package
 2. Right-click → FetchCoder options
 3. Or use quick actions (lightbulb icon)
 4. Choose: Ask, Explain, Refactor, or Fix
+
+### Viewing Changes with Diff Viewer
+1. After FetchCoder makes changes, a notification appears
+2. Click "View Changes" or use command palette: `FetchCoder: Open Diff Viewer`
+3. See list of all modified, created, and deleted files
+4. Click "View" on any file to see side-by-side diff
+5. Changes are tracked automatically for every operation
 
 ### Keyboard Shortcuts
 
@@ -249,9 +265,13 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 💡 Tips
 
 - **Context is key**: The extension automatically includes relevant open files in your requests
+- **Workspace awareness**: FetchCoder automatically works in your current workspace folder - files are created/modified in the right location
+- **Conversational context**: The chat remembers your conversation history, so you can ask follow-up questions naturally
+- **Track changes**: Check the Diff Viewer to see exactly what FetchCoder modified in your project
 - **Use specific agents**: Switch to specialized agents for better results (Build for compilation issues, Plan for architecture questions)
 - **Compose for big changes**: Use Compose Mode instead of Chat for multi-file modifications
 - **Keyboard shortcuts**: Learn the shortcuts to speed up your workflow
+- **Progress indicators**: Watch the live progress updates to see what FetchCoder is doing in real-time
 
 ## 🙏 Acknowledgments
 

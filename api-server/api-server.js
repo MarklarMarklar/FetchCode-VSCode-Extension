@@ -17,20 +17,24 @@ const HOST = process.env.HOST || '127.0.0.1';
 const FETCHCODER_BIN = path.join(process.env.HOME, '.fetchcoder', 'bin', 'fetchcoder');
 
 // Session storage for managing conversations
+// Maps workspacePath -> sessionId
 const sessions = new Map();
 
 function log(message) {
   console.log(`[${new Date().toISOString()}] ${message}`);
 }
 
-function createSession() {
-  const sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
-  sessions.set(sessionId, {
-    id: sessionId,
-    messages: [],
-    created: Date.now()
-  });
-  return sessionId;
+function getOrCreateSession(workspacePath) {
+  // Use workspace path as session key, or 'default' if none
+  const key = workspacePath || 'default';
+  
+  if (!sessions.has(key)) {
+    const sessionId = Date.now().toString(36) + Math.random().toString(36).substr(2);
+    sessions.set(key, sessionId);
+    log(`Created new session: ${sessionId} for workspace: ${key}`);
+  }
+  
+  return sessions.get(key);
 }
 
 function parseBody(req) {
@@ -48,7 +52,7 @@ function parseBody(req) {
   });
 }
 
-async function executeFetchCoder(message, agent = 'general', context = [], workspacePath = null) {
+async function executeFetchCoder(message, agent = 'general', context = [], workspacePath = null, history = null) {
   return new Promise((resolve, reject) => {
     const args = ['run'];
     
@@ -57,11 +61,24 @@ async function executeFetchCoder(message, agent = 'general', context = [], works
       args.push('--agent', agent);
     }
     
+    // Build full message with conversation history
+    let fullMessage = '';
+    if (history && history.length > 0) {
+      // Include last few messages for context (limit to avoid token limits)
+      const recentHistory = history.slice(-6); // Last 3 exchanges (6 messages)
+      fullMessage = 'Previous conversation:\n';
+      recentHistory.forEach(msg => {
+        fullMessage += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      });
+      fullMessage += '\nCurrent message:\n';
+    }
+    fullMessage += message;
+    
     // Use workspace path if provided, otherwise use current directory
     const cwd = workspacePath || process.cwd();
     
-    log(`Executing: echo "${message.substring(0, 50)}..." | ${FETCHCODER_BIN} ${args.join(' ')}`);
-    log(`Working directory: ${cwd}`);
+    log(`Executing: echo "<message with history>" | ${FETCHCODER_BIN} ${args.join(' ')}`);
+    log(`Working directory: ${cwd}, History: ${history ? history.length + ' messages' : 'none'}`);
     
     const child = spawn(FETCHCODER_BIN, args, {
       cwd: cwd,
@@ -76,17 +93,17 @@ async function executeFetchCoder(message, agent = 'general', context = [], works
     let stderr = '';
     let completed = false;
     
-    // Set timeout of 60 seconds
+    // Set timeout of 5 minutes for longer tasks
     const timeout = setTimeout(() => {
       if (!completed) {
         completed = true;
         child.kill();
-        reject(new Error('Request timed out after 60 seconds'));
+        reject(new Error('Request timed out after 5 minutes'));
       }
-    }, 60000);
+    }, 300000); // 5 minutes
     
     // Write message to stdin and close it
-    child.stdin.write(message + '\n');
+    child.stdin.write(fullMessage + '\n');
     child.stdin.end();
     
     child.stdout.on('data', data => {
@@ -132,6 +149,94 @@ async function executeFetchCoder(message, agent = 'general', context = [], works
   });
 }
 
+// Streaming version that sends progress updates
+function executeFetchCoderStreaming(message, agent, context, workspacePath, history, onProgress) {
+  return new Promise((resolve, reject) => {
+    const args = ['run'];
+    
+    if (agent && agent !== 'general') {
+      args.push('--agent', agent);
+    }
+    
+    // Build full message with conversation history
+    let fullMessage = '';
+    if (history && history.length > 0) {
+      const recentHistory = history.slice(-6);
+      fullMessage = 'Previous conversation:\n';
+      recentHistory.forEach(msg => {
+        fullMessage += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
+      });
+      fullMessage += '\nCurrent message:\n';
+    }
+    fullMessage += message;
+    
+    const cwd = workspacePath || process.cwd();
+    log(`Streaming execution in: ${cwd}, History: ${history ? history.length + ' messages' : 'none'}`);
+    
+    const child = spawn(FETCHCODER_BIN, args, {
+      cwd: cwd,
+      env: {
+        ...process.env,
+        HOME: process.env.HOME,
+        PATH: process.env.PATH
+      }
+    });
+    
+    let stdout = '';
+    let completed = false;
+    
+    const timeout = setTimeout(() => {
+      if (!completed) {
+        completed = true;
+        child.kill();
+        reject(new Error('Request timed out after 5 minutes'));
+      }
+    }, 300000);
+    
+    child.stdin.write(fullMessage + '\n');
+    child.stdin.end();
+    
+    // Stream stdout (actual response)
+    child.stdout.on('data', data => {
+      const text = data.toString();
+      stdout += text;
+      onProgress({ type: 'content', data: text });
+    });
+    
+    // Stream stderr (progress indicators, tool calls)
+    child.stderr.on('data', data => {
+      const text = data.toString();
+      // Send progress updates from stderr
+      onProgress({ type: 'progress', data: text });
+    });
+    
+    child.on('close', code => {
+      clearTimeout(timeout);
+      if (completed) return;
+      completed = true;
+      
+      if (code !== 0 && code !== null) {
+        reject(new Error(`FetchCoder failed with code ${code}`));
+      } else {
+        const cleanOutput = stdout
+          .replace(/\x1b\[[0-9;]*m/g, '')
+          .replace(/\x1b\[.*?m/g, '')
+          .replace(/Session saved:.*$/m, '')
+          .trim();
+        resolve(cleanOutput);
+      }
+    });
+    
+    child.on('error', err => {
+      clearTimeout(timeout);
+      if (!completed) {
+        completed = true;
+        reject(err);
+      }
+    });
+  });
+}
+
 const server = http.createServer(async (req, res) => {
   // CORS headers
   res.setHeader('Access-Control-Allow-Origin', '*');
@@ -170,39 +275,59 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       
-      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
+      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, History: ${history ? history.length : 0} messages, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
+      
+      // Always use streaming for better progress feedback
+      res.writeHead(200, {
+        'Content-Type': 'text/event-stream',
+        'Cache-Control': 'no-cache',
+        'Connection': 'keep-alive'
+      });
       
       try {
-        const response = await executeFetchCoder(message, agent, context, workspacePath);
+        await executeFetchCoderStreaming(message, agent, context, workspacePath, history, (event) => {
+          // Stream progress and content
+          if (event.type === 'progress') {
+            // Clean ANSI codes from progress messages
+            const cleanProgress = event.data
+              .replace(/\x1b\[[0-9;]*m/g, '')
+              .replace(/\x1b\[.*?m/g, '')
+              .trim();
+            if (cleanProgress) {
+              res.write(`data: ${JSON.stringify({ type: 'progress', text: cleanProgress })}\n\n`);
+            }
+          } else if (event.type === 'content') {
+            // Stream content tokens
+            res.write(`data: ${JSON.stringify({ type: 'content', token: event.data })}\n\n`);
+          }
+        });
         
-        // If streaming is requested, send as SSE format
-        if (stream) {
-          res.writeHead(200, {
-            'Content-Type': 'text/event-stream',
-            'Cache-Control': 'no-cache',
-            'Connection': 'keep-alive'
-          });
-          
-          // Send the response text as data
-          res.write(`data: ${JSON.stringify({ content: response })}\n\n`);
-          res.write('data: [DONE]\n\n');
-          res.end();
-        } else {
-          // Regular JSON response
-          res.writeHead(200, { 'Content-Type': 'application/json' });
-          res.end(JSON.stringify({
-            response: response,
-            agent: agent || 'general',
-            timestamp: Date.now()
-          }));
-        }
+        // Send completion
+        res.write('data: [DONE]\n\n');
+        res.end();
       } catch (error) {
         log(`Error executing FetchCoder: ${error.message}`);
-        res.writeHead(500, { 'Content-Type': 'application/json' });
-        res.end(JSON.stringify({
-          error: error.message,
-          response: 'Sorry, I encountered an error processing your request.'
-        }));
+        res.write(`data: ${JSON.stringify({ type: 'error', error: error.message })}\n\n`);
+        res.end();
+      }
+      return;
+    }
+    
+    // Clear session endpoint
+    if (req.url === '/api/session/clear' && req.method === 'POST') {
+      const body = await parseBody(req);
+      const { workspacePath } = body;
+      
+      const key = workspacePath || 'default';
+      if (sessions.has(key)) {
+        const sessionId = sessions.get(key);
+        sessions.delete(key);
+        log(`Cleared session ${sessionId} for workspace: ${key}`);
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'Session cleared' }));
+      } else {
+        res.writeHead(200, { 'Content-Type': 'application/json' });
+        res.end(JSON.stringify({ success: true, message: 'No session to clear' }));
       }
       return;
     }

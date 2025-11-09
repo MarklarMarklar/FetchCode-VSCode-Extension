@@ -2,9 +2,11 @@ import * as vscode from 'vscode';
 import { FetchCoderConfig } from './config';
 import { ChatPanel } from './views/chatPanel';
 import { ComposePanel } from './views/composePanel';
+import { DiffPanel } from './views/diffPanel';
 import { HistoryViewProvider } from './views/historyView';
 import { StatusBarManager } from './views/statusBar';
 import { FetchCoderCodeActionProvider } from './providers/codeActionProvider';
+import { FileTracker } from './utils/fileTracker';
 import { registerChatCommands } from './commands/chat';
 import { registerComposeCommands } from './commands/compose';
 import { registerAgentCommands } from './commands/agents';
@@ -46,6 +48,74 @@ export function activate(context: vscode.ExtensionContext) {
     registerComposeCommands(context, statusBarManager);
     registerAgentCommands(context, statusBarManager);
 
+    // Register diff command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.openDiff', () => {
+            DiffPanel.createOrShow(context.extensionUri);
+        })
+    );
+    
+    // Test command to manually scan for changes
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.testScanChanges', async () => {
+            const fileTracker = FileTracker.getInstance();
+            const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+            
+            if (!workspaceFolder) {
+                vscode.window.showErrorMessage('No workspace folder open!');
+                return;
+            }
+            
+            vscode.window.showInformationMessage(`Starting tracking in: ${workspaceFolder.uri.fsPath}`);
+            
+            // Take snapshots NOW
+            fileTracker.startTracking();
+            
+            vscode.window.showInformationMessage(`✅ Snapshots captured! NOW edit hello.py, add a NEW line, and save. You have 10 seconds.`);
+            
+            // Wait for user to make changes
+            setTimeout(async () => {
+                // Force VS Code to save all open files
+                await vscode.workspace.saveAll();
+                
+                // Wait a bit more for file system to sync
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                console.log('Starting scan for changes...');
+                const changes = await fileTracker.scanForChanges();
+                console.log('Scan complete, changes:', changes);
+                
+                vscode.window.showInformationMessage(`Scan complete! Found ${changes.length} changes.`);
+                
+                if (changes.length > 0) {
+                    // Create diff panel FIRST
+                    console.log('Creating DiffPanel...');
+                    const diffPanel = DiffPanel.createOrShow(context.extensionUri);
+                    
+                    // Add changes immediately
+                    console.log('Adding changes to DiffPanel...');
+                    changes.forEach(change => {
+                        console.log('Adding change:', change.operation, change.filePath);
+                        diffPanel.addFileChange(change);
+                    });
+                    
+                    // Show notification
+                    vscode.window.showInformationMessage(
+                        `Found ${changes.length} change(s): ${changes.map(c => c.filePath).join(', ')}`
+                    );
+                } else {
+                    vscode.window.showWarningMessage('No changes detected. The file content is identical to the snapshot.');
+                }
+            }, 10000); // Give user 10 seconds to make a change
+        })
+    );
+
+    // Initialize file tracker
+    const fileTracker = FileTracker.getInstance();
+    context.subscriptions.push({
+        dispose: () => fileTracker.dispose()
+    });
+
     // Check API connection on startup
     checkApiConnection();
 }
@@ -83,5 +153,6 @@ export function deactivate() {
     // Cleanup
     ChatPanel.dispose();
     ComposePanel.dispose();
+    DiffPanel.dispose();
 }
 

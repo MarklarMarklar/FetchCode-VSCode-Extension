@@ -66,12 +66,17 @@
             case 'streamToken':
                 updateStreamingMessage(message.token);
                 break;
+            case 'progress':
+                showProgress(message.text);
+                break;
             case 'messageComplete':
                 completeStreamingMessage(message.content);
+                removeProgressIndicator();
                 sendBtn.disabled = false;
                 break;
             case 'error':
                 removeTypingIndicator();
+                removeProgressIndicator();
                 showError(message.error);
                 sendBtn.disabled = false;
                 break;
@@ -85,8 +90,27 @@
                 chatInput.value = message.message;
                 chatInput.focus();
                 break;
+            case 'workspaceInfo':
+                updateWorkspaceInfo(message.workspacePath);
+                break;
         }
     });
+
+    function updateWorkspaceInfo(workspacePath) {
+        let workspaceDiv = document.getElementById('workspaceInfo');
+        if (!workspaceDiv) {
+            workspaceDiv = document.createElement('div');
+            workspaceDiv.id = 'workspaceInfo';
+            workspaceDiv.className = 'workspace-info';
+            const header = document.querySelector('.chat-header');
+            header.parentNode.insertBefore(workspaceDiv, header.nextSibling);
+        }
+        workspaceDiv.textContent = `📁 Working directory: ${workspacePath}`;
+        workspaceDiv.title = workspacePath;
+    }
+
+    // Notify extension that webview is ready
+    vscode.postMessage({ type: 'ready' });
 
     function addMessage(role, content) {
         const messageDiv = document.createElement('div');
@@ -166,6 +190,47 @@
         notifDiv.textContent = text;
         chatMessages.appendChild(notifDiv);
         scrollToBottom();
+    }
+
+    function showProgress(text) {
+        // Skip empty or very short messages
+        if (!text || text.trim().length < 3) return;
+        
+        // Determine icon based on action type
+        let icon = '🔧';
+        const lowerText = text.toLowerCase();
+        if (lowerText.includes('write') || lowerText.includes('creat')) {
+            icon = '📝';
+        } else if (lowerText.includes('read') || lowerText.includes('list') || lowerText.includes('ls')) {
+            icon = '📖';
+        } else if (lowerText.includes('bash') || lowerText.includes('python') || lowerText.includes('node')) {
+            icon = '⚙️';
+        } else if (lowerText.includes('search') || lowerText.includes('grep')) {
+            icon = '🔍';
+        } else if (lowerText.includes('delet') || lowerText.includes('remov')) {
+            icon = '🗑️';
+        }
+        
+        // Create a new progress message for each tool call/action
+        const progressDiv = document.createElement('div');
+        progressDiv.className = 'progress-message';
+        
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'progress-icon';
+        iconSpan.textContent = icon;
+        
+        const textSpan = document.createElement('span');
+        textSpan.className = 'progress-text';
+        textSpan.textContent = text;
+        
+        progressDiv.appendChild(iconSpan);
+        progressDiv.appendChild(textSpan);
+        chatMessages.appendChild(progressDiv);
+        scrollToBottom();
+    }
+
+    function removeProgressIndicator() {
+        // No longer needed - progress messages stay in chat
     }
 
     function scrollToBottom() {
