@@ -2,6 +2,7 @@ import * as vscode from 'vscode';
 import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
+import * as http from 'http';
 import { spawn, ChildProcess } from 'child_process';
 
 export class ApiServerManager {
@@ -37,12 +38,28 @@ export class ApiServerManager {
      * Check if API server is currently running
      */
     public async isRunning(): Promise<boolean> {
-        try {
-            const response = await fetch(`http://localhost:${this.apiServerPort}/health`);
-            return response.ok;
-        } catch {
-            return false;
-        }
+        return new Promise((resolve) => {
+            const req = http.get(
+                {
+                    hostname: 'localhost',
+                    port: this.apiServerPort,
+                    path: '/health',
+                    timeout: 5000
+                },
+                (res) => {
+                    resolve(res.statusCode === 200);
+                }
+            );
+
+            req.on('error', () => {
+                resolve(false);
+            });
+
+            req.on('timeout', () => {
+                req.destroy();
+                resolve(false);
+            });
+        });
     }
 
     /**

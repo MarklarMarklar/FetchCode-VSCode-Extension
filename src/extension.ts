@@ -15,7 +15,7 @@ import { registerAgentCommands } from './commands/agents';
 let statusBarManager: StatusBarManager;
 let apiServerManager: ApiServerManager;
 
-export async function activate(context: vscode.ExtensionContext) {
+export function activate(context: vscode.ExtensionContext) {
     console.log('FetchCoder extension is now active!');
 
     // Initialize API Server Manager
@@ -124,8 +124,18 @@ export async function activate(context: vscode.ExtensionContext) {
     // Register API server management commands
     registerApiServerCommands(context);
 
-    // Auto-setup API server on first activation
-    await autoSetupApiServer(context);
+    // Auto-setup API server on first activation (non-blocking)
+    autoSetupApiServer(context).catch(error => {
+        console.error('FetchCoder: Error during auto-setup:', error);
+        vscode.window.showErrorMessage(
+            'FetchCoder: Auto-setup failed. You can manually setup using: FetchCoder: Setup API Server',
+            'Setup Now'
+        ).then(selection => {
+            if (selection === 'Setup Now') {
+                vscode.commands.executeCommand('fetchcoder.setupApiServer');
+            }
+        });
+    });
 
     // Dispose API server manager
     context.subscriptions.push({
