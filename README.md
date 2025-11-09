@@ -49,28 +49,23 @@ FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationla
 
 Before using this extension, you need:
 
-1. **FetchCoder installed globally**:
+1. **FetchCoder CLI installed globally**:
    ```bash
    npm install -g @fetchai/fetchcoder
    ```
 
-2. **FetchCoder REST API server running**:
-   
-   **Important**: The standard `fetchcoder serve` command does not provide the REST API endpoints needed by this extension. Instead, use our custom REST API server:
-   
-   ```bash
-   # Copy the API server files to ~/.fetchcoder/
-   cp -r api-server/* ~/.fetchcoder/
-   
-   # Start the REST API server
-   ~/.fetchcoder/start-api-server.sh
-   ```
-   
-   The server will start on `http://localhost:3000` by default.
-   
-   See [api-server/README.md](api-server/README.md) for detailed documentation.
+2. **VS Code version 1.80.0 or higher**
 
-3. **VS Code version 1.80.0 or higher**
+3. **API Server Setup** (Automated):
+   
+   The extension will automatically set up and start the API server on first launch! Just click "Setup Now" when prompted.
+   
+   **Manual setup** (if needed):
+   - Open Command Palette (`Ctrl+Shift+P` or `Cmd+Shift+P`)
+   - Run: `FetchCoder: Setup API Server`
+   - The extension will automatically copy files and start the server
+   
+   **Note**: The standard `fetchcoder serve` command doesn't provide the REST endpoints we need, so this extension includes a custom API server that wraps the FetchCoder CLI.
 
 ## 🚀 Installation
 
@@ -101,6 +96,22 @@ vsce package
 ```
 
 ## 🎯 Usage
+
+### First Time Setup
+On first launch, the extension will prompt you to set up the API server:
+1. Click **"Setup Now"** when prompted
+2. The extension automatically installs and starts the API server
+3. You'll see a confirmation: "✅ FetchCoder API server is ready!"
+4. Start coding with AI assistance!
+
+### API Server Management
+Control the API server from the Command Palette:
+- `FetchCoder: Setup API Server` - Install and configure the server
+- `FetchCoder: Start API Server` - Start the server
+- `FetchCoder: Stop API Server` - Stop the server
+- `FetchCoder: Check API Server Status` - View server status
+
+The server runs at `http://localhost:3000` and starts automatically when you open VS Code.
 
 ### Opening Chat
 - Use keyboard shortcut: `Ctrl+Shift+F C` (Mac: `Cmd+Shift+F C`)
@@ -186,24 +197,41 @@ FetchCoder comes with default test API keys. For production use, set your own:
 ## 🐛 Troubleshooting
 
 ### "Unable to connect to FetchCoder API"
-**Solution**: Ensure the REST API server is running:
-```bash
-~/.fetchcoder/start-api-server.sh
-```
+**Solution**: The API server may not be running. Try:
+1. Open Command Palette (`Ctrl+Shift+P`)
+2. Run: `FetchCoder: Check API Server Status`
+3. If not running, click "Start Server" or run `FetchCoder: Start API Server`
 
-To verify it's running:
+**Manual verification**:
 ```bash
 curl http://localhost:3000/health
 ```
 
-### Raw JSON responses in chat
-If you see raw JSON like `{"response":"..."}` instead of formatted text, restart the API server:
-```bash
-~/.fetchcoder/stop-api-server.sh
-~/.fetchcoder/start-api-server.sh
-```
+### API Server Won't Start
+1. Check if FetchCoder CLI is installed:
+   ```bash
+   ls ~/.fetchcoder/bin/fetchcoder
+   ```
+2. If not found, install FetchCoder:
+   ```bash
+   npm install -g @fetchai/fetchcoder
+   ```
+3. Re-run: `FetchCoder: Setup API Server`
 
-Then reload VSCode window: `Ctrl+Shift+P` → "Developer: Reload Window"
+### Server Already Running on Port 3000
+If port 3000 is in use, stop any existing server:
+```bash
+# Check what's using port 3000
+lsof -i :3000
+# Or use the extension command
+```
+Run: `FetchCoder: Stop API Server`
+
+### Raw JSON responses in chat
+If you see raw JSON like `{"response":"..."}`:
+1. Run: `FetchCoder: Stop API Server`
+2. Run: `FetchCoder: Start API Server`
+3. Reload VSCode: `Ctrl+Shift+P` → "Developer: Reload Window"
 
 ### Connection on different port
 If running the API server on a different port:

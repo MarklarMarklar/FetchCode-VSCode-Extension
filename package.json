@@ -82,6 +82,22 @@
       {
         "command": "fetchcoder.testScanChanges",
         "title": "FetchCoder: Test Scan Changes (Debug)"
+      },
+      {
+        "command": "fetchcoder.setupApiServer",
+        "title": "FetchCoder: Setup API Server"
+      },
+      {
+        "command": "fetchcoder.startApiServer",
+        "title": "FetchCoder: Start API Server"
+      },
+      {
+        "command": "fetchcoder.stopApiServer",
+        "title": "FetchCoder: Stop API Server"
+      },
+      {
+        "command": "fetchcoder.checkApiServerStatus",
+        "title": "FetchCoder: Check API Server Status"
       }
     ],
     "keybindings": [
