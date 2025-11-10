@@ -2,7 +2,7 @@
 
 > AI-powered coding assistant that brings FetchCoder directly into VS Code
 
-[![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)](https://github.com/fetchai/fetchcoder-vscode)
+[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/fetchai/fetchcoder-vscode)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationlab.fetch.ai/resources/docs/fetchcoder/overview) AI coding agent into Visual Studio Code, providing a Cursor-like experience with chat, compose mode, and intelligent code actions.
@@ -48,6 +48,7 @@ FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationla
 - **Native diff viewing**: Click any change to view side-by-side diff
 - **Real-time updates**: Changes appear automatically after each operation
 - **Change history**: Review all modifications made during your session
+- **Revert changes**: Undo individual changes or revert all changes at once with one click
 
 ## 📋 Prerequisites
 
@@ -155,12 +156,14 @@ Attached files/folders are automatically included when you send messages, giving
 3. Or use quick actions (lightbulb icon)
 4. Choose: Ask, Explain, Refactor, or Fix
 
-### Viewing Changes with Diff Viewer
+### Viewing and Reverting Changes with Diff Viewer
 1. After FetchCoder makes changes, a notification appears
 2. Click "View Changes" or use command palette: `FetchCoder: Open Diff Viewer`
 3. See list of all modified, created, and deleted files
-4. Click "View" on any file to see side-by-side diff
-5. Changes are tracked automatically for every operation
+4. **Click "View"** on any file to see side-by-side diff
+5. **Click "↩️ Revert"** on any file to undo that specific change
+6. **Click "↩️ Revert All"** at the top to undo all changes at once
+7. Changes are tracked automatically for every operation
 
 ### Keyboard Shortcuts
 

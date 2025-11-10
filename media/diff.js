@@ -2,11 +2,16 @@
     const vscode = acquireVsCodeApi();
     const changesList = document.getElementById('changesList');
     const clearBtn = document.getElementById('clearBtn');
+    const revertAllBtn = document.getElementById('revertAllBtn');
 
     console.log('DiffPanel: diff.js loaded');
 
     clearBtn.addEventListener('click', () => {
         vscode.postMessage({ type: 'clearChanges' });
+    });
+
+    revertAllBtn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'revertAll' });
     });
 
     window.addEventListener('message', event => {
@@ -40,7 +45,10 @@
                             <span class="change-time">${time}</span>
                         </div>
                     </div>
-                    <button class="btn-view" data-filepath="${change.filePath}">View</button>
+                    <div class="change-actions">
+                        <button class="btn-view" data-filepath="${change.filePath}">View</button>
+                        <button class="btn-revert" data-filepath="${change.filePath}" title="Revert this change">↩️ Revert</button>
+                    </div>
                 </div>
             `;
         }).join('');
@@ -52,6 +60,16 @@
                 const filePath = button.getAttribute('data-filepath');
                 console.log('View button clicked for:', filePath);
                 viewDiff(filePath);
+            });
+        });
+
+        // Attach event listeners to all Revert buttons
+        const revertButtons = changesList.querySelectorAll('.btn-revert');
+        revertButtons.forEach(button => {
+            button.addEventListener('click', () => {
+                const filePath = button.getAttribute('data-filepath');
+                console.log('Revert button clicked for:', filePath);
+                revertChange(filePath);
             });
         });
     }
@@ -68,6 +86,11 @@
     function viewDiff(filePath) {
         console.log('viewDiff called for:', filePath);
         vscode.postMessage({ type: 'viewDiff', filePath });
+    }
+
+    function revertChange(filePath) {
+        console.log('revertChange called for:', filePath);
+        vscode.postMessage({ type: 'revertChange', filePath });
     }
 
     // Notify extension that webview is ready

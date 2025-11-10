@@ -65,6 +65,12 @@ export class DiffPanel {
                     case 'clearChanges':
                         this.clearChanges();
                         break;
+                    case 'revertChange':
+                        await this.revertChange(message.filePath);
+                        break;
+                    case 'revertAll':
+                        await this.revertAllChanges();
+                        break;
                 }
             },
             null,
@@ -158,6 +164,105 @@ export class DiffPanel {
         }
     }
 
+    private async revertChange(filePath: string) {
+        const change = this.fileChanges.find(c => c.filePath === filePath);
+        if (!change) {
+            vscode.window.showErrorMessage(`Change not found: ${filePath}`);
+            return;
+        }
+
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        const fullPath = vscode.Uri.joinPath(workspaceFolder.uri, change.filePath);
+
+        try {
+            switch (change.operation) {
+                case 'modified':
+                    // Restore old content
+                    if (change.oldContent !== undefined) {
+                        await vscode.workspace.fs.writeFile(
+                            fullPath,
+                            Buffer.from(change.oldContent, 'utf8')
+                        );
+                        vscode.window.showInformationMessage(`✓ Reverted: ${change.filePath}`);
+                    } else {
+                        vscode.window.showErrorMessage('No backup content available for this file');
+                        return;
+                    }
+                    break;
+
+                case 'created':
+                    // Delete the file that was created
+                    await vscode.workspace.fs.delete(fullPath);
+                    vscode.window.showInformationMessage(`✓ Deleted: ${change.filePath}`);
+                    break;
+
+                case 'deleted':
+                    // Recreate the file with old content
+                    if (change.oldContent !== undefined) {
+                        await vscode.workspace.fs.writeFile(
+                            fullPath,
+                            Buffer.from(change.oldContent, 'utf8')
+                        );
+                        vscode.window.showInformationMessage(`✓ Restored: ${change.filePath}`);
+                    } else {
+                        vscode.window.showErrorMessage('No backup content available for this file');
+                        return;
+                    }
+                    break;
+            }
+
+            // Remove from changes list
+            this.fileChanges = this.fileChanges.filter(c => c.filePath !== filePath);
+            this.updateWebview();
+
+        } catch (error: any) {
+            vscode.window.showErrorMessage(`Failed to revert ${filePath}: ${error.message}`);
+        }
+    }
+
+    private async revertAllChanges() {
+        if (this.fileChanges.length === 0) {
+            vscode.window.showInformationMessage('No changes to revert');
+            return;
+        }
+
+        const confirmed = await vscode.window.showWarningMessage(
+            `Revert all ${this.fileChanges.length} change(s)? This will undo all modifications, deletions, and creations.`,
+            { modal: true },
+            'Revert All',
+            'Cancel'
+        );
+
+        if (confirmed !== 'Revert All') {
+            return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        const changes = [...this.fileChanges]; // Create a copy to iterate
+
+        for (const change of changes) {
+            try {
+                await this.revertChange(change.filePath);
+                successCount++;
+            } catch (error) {
+                errorCount++;
+            }
+        }
+
+        if (successCount > 0) {
+            vscode.window.showInformationMessage(
+                `✓ Reverted ${successCount} change(s)` +
+                (errorCount > 0 ? ` (${errorCount} failed)` : '')
+            );
+        }
+    }
+
     private disposePanel() {
         DiffPanel.currentPanel = undefined;
         this.panel.dispose();
@@ -190,7 +295,10 @@ export class DiffPanel {
     <div class="diff-container">
         <div class="diff-header">
             <h2>File Changes</h2>
-            <button id="clearBtn" class="btn-secondary">Clear All</button>
+            <div class="header-buttons">
+                <button id="revertAllBtn" class="btn-warning">↩️ Revert All</button>
+                <button id="clearBtn" class="btn-secondary">Clear All</button>
+            </div>
         </div>
         <div id="changesList" class="changes-list">
             <div class="empty-state">No changes yet. FetchCoder will track file modifications here.</div>
