@@ -34,10 +34,30 @@ export interface StreamCallback {
 export class FetchCoderClient {
     private baseUrl: string;
     private currentAgent: string;
+    private asi1ApiKey: string;
+    private agentverseApiKey: string;
 
     constructor() {
         this.baseUrl = FetchCoderConfig.get('apiUrl');
         this.currentAgent = FetchCoderConfig.get('defaultAgent');
+        this.asi1ApiKey = FetchCoderConfig.get('asi1ApiKey');
+        this.agentverseApiKey = FetchCoderConfig.get('agentverseApiKey');
+    }
+
+    private getHeaders(): Record<string, string> {
+        const headers: Record<string, string> = {
+            'Content-Type': 'application/json'
+        };
+
+        // Add API keys if configured - these will be converted to env vars by the API server
+        if (this.asi1ApiKey) {
+            headers['X-ASI1-Api-Key'] = this.asi1ApiKey;
+        }
+        if (this.agentverseApiKey) {
+            headers['X-Agentverse-Api-Key'] = this.agentverseApiKey;
+        }
+
+        return headers;
     }
 
     setAgent(agent: string) {
@@ -67,10 +87,7 @@ export class FetchCoderClient {
         try {
             const response = await fetch(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
-                headers: {
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    'Content-Type': 'application/json'
-                },
+                headers: this.getHeaders(),
                 body: JSON.stringify({
                     message: request.message,
                     agent: request.agent || this.currentAgent,
@@ -109,14 +126,12 @@ export class FetchCoderClient {
                 workspacePath: request.context?.workspacePath
             };
             
+            const headers = this.getHeaders();
+            headers['Accept'] = 'text/event-stream';
+            
             const response = await fetch(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
-                headers: {
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    'Content-Type': 'application/json',
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    'Accept': 'text/event-stream'
-                },
+                headers: headers,
                 body: JSON.stringify(payload)
             });
 
@@ -203,10 +218,7 @@ export class FetchCoderClient {
         try {
             const response = await fetch(`${this.baseUrl}/api/command`, {
                 method: 'POST',
-                headers: {
-                    // eslint-disable-next-line @typescript-eslint/naming-convention
-                    'Content-Type': 'application/json'
-                },
+                headers: this.getHeaders(),
                 body: JSON.stringify({
                     command,
                     args
@@ -230,6 +242,11 @@ export class FetchCoderClient {
 
     updateBaseUrl(url: string) {
         this.baseUrl = url;
+    }
+
+    updateApiKeys() {
+        this.asi1ApiKey = FetchCoderConfig.get('asi1ApiKey');
+        this.agentverseApiKey = FetchCoderConfig.get('agentverseApiKey');
     }
 }
 

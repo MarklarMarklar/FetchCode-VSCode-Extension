@@ -82,6 +82,9 @@ export class ChatPanel {
                     case 'dropFiles':
                         await this.handleDropFiles(message.uris);
                         break;
+                    case 'openSettings':
+                        vscode.commands.executeCommand('fetchcoder.openSettings');
+                        break;
                 }
             },
             null,
@@ -501,6 +504,7 @@ export class ChatPanel {
                     <option value="plan">Plan</option>
                     <option value="agentverse">Agentverse</option>
                 </select>
+                <button id="settingsBtn" class="btn-icon" title="Settings">⚙️</button>
                 <button id="clearBtn" class="btn-icon" title="Clear History">🗑️</button>
             </div>
         </div>

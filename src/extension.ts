@@ -3,6 +3,7 @@ import { FetchCoderConfig } from './config';
 import { ChatPanel } from './views/chatPanel';
 import { ComposePanel } from './views/composePanel';
 import { DiffPanel } from './views/diffPanel';
+import { SettingsPanel } from './views/settingsPanel';
 import { HistoryViewProvider } from './views/historyView';
 import { StatusBarManager } from './views/statusBar';
 import { FetchCoderCodeActionProvider } from './providers/codeActionProvider';
@@ -57,6 +58,13 @@ export function activate(context: vscode.ExtensionContext) {
     context.subscriptions.push(
         vscode.commands.registerCommand('fetchcoder.openDiff', () => {
             DiffPanel.createOrShow(context.extensionUri);
+        })
+    );
+
+    // Register settings command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.openSettings', () => {
+            SettingsPanel.createOrShow(context.extensionUri);
         })
     );
     
@@ -362,5 +370,6 @@ export function deactivate() {
     ChatPanel.dispose();
     ComposePanel.dispose();
     DiffPanel.dispose();
+    SettingsPanel.dispose();
 }
 

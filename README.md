@@ -2,7 +2,7 @@
 
 > AI-powered coding assistant that brings FetchCoder directly into VS Code
 
-[![Version](https://img.shields.io/badge/version-0.4.0-blue.svg)](https://github.com/fetchai/fetchcoder-vscode)
+[![Version](https://img.shields.io/badge/version-0.5.3-blue.svg)](https://github.com/fetchai/fetchcoder-vscode)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationlab.fetch.ai/resources/docs/fetchcoder/overview) AI coding agent into Visual Studio Code, providing a Cursor-like experience with chat, compose mode, and intelligent code actions.
@@ -19,6 +19,8 @@ FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationla
 - Multiple specialized agents
 - Workspace-aware: automatically works in your project directory
 - Live progress updates showing tool calls and file operations
+- **Built-in Settings Panel**: Click the ⚙️ button to configure API keys and preferences
+- **One-click clear history**: Clear chat with a single click (no confirmation needed)
 - **File/Folder Attachments**: Add context by attaching files or folders using multiple methods:
   - **Chat Interface**: Click the 📄 or 📁 buttons in the chat panel
   - **Context Menu**: Right-click files/folders in Explorer → "FetchCoder: Add to Chat Context"
@@ -123,6 +125,13 @@ The server runs at `http://localhost:3000` and starts automatically when you ope
 - Or command palette: `FetchCoder: Open Chat`
 - Or click the FetchCoder icon in the activity bar
 
+### Configuring API Keys
+1. Click the **⚙️ Settings** button in the chat header
+2. Enter your ASI1 and Agentverse API keys
+3. Configure other preferences (API URL, default agent, etc.)
+4. Click **Save Settings**
+5. Optionally click **Test Connection** to verify setup
+
 ### Attaching Files/Folders to Chat
 Add files or folders as context for more accurate AI responses. You can attach in three ways:
 
@@ -181,12 +190,31 @@ Attached files/folders are automatically included when you send messages, giving
 
 ## ⚙️ Configuration
 
-Configure the extension in VS Code settings (`Ctrl+,`):
+### Using the Settings Panel (Recommended)
+The easiest way to configure FetchCoder:
+
+1. Open FetchCoder Chat (`Ctrl+Shift+F C`)
+2. Click the **⚙️ Settings** button in the chat header
+3. Configure your preferences:
+   - **API Keys** (ASI1 and Agentverse)
+   - **API Server URL**
+   - **Default Agent**
+   - **Auto Context Files**
+   - **Feature Toggles** (streaming, inline actions)
+4. Click **Save Settings**
+5. Use **Test Connection** to verify your setup
+
+### Using VS Code Settings (Alternative)
+You can also configure via VS Code settings (`Ctrl+,`):
 
 ```json
 {
   // FetchCoder API server URL
   "fetchcoder.apiUrl": "http://localhost:3000",
+  
+  // API Keys
+  "fetchcoder.asi1ApiKey": "your-asi1-key-here",
+  "fetchcoder.agentverseApiKey": "your-agentverse-key-here",
   
   // Default agent to use
   "fetchcoder.defaultAgent": "general",
@@ -204,23 +232,39 @@ Configure the extension in VS Code settings (`Ctrl+,`):
 
 ## 🔑 API Keys
 
-FetchCoder comes with default test API keys. For production use, set your own:
+FetchCoder comes with default test API keys. For production use and full agent capabilities, set your own API keys.
 
-### ASI1 API Key (Required)
-1. Visit [https://asi1.ai](https://asi1.ai)
-2. Sign up and generate your API key
-3. Set the key in FetchCoder:
-   ```bash
-   echo 'ASI1_API_KEY=your-key-here' >> ~/.fetchcoder/.env
-   ```
+### Method 1: Settings Panel (Easiest)
+1. Open FetchCoder Chat (`Ctrl+Shift+F C`)
+2. Click the **⚙️ Settings** button
+3. Enter your API keys:
+   - **ASI1 API Key**: Get from [https://asi1.ai](https://asi1.ai)
+   - **Agentverse API Key**: Get from [https://agentverse.ai/settings/api-keys](https://agentverse.ai/settings/api-keys)
+4. Click **Save Settings**
+5. Click **Test Connection** to verify
 
-### Agentverse API Key (Optional)
-1. Visit [https://agentverse.ai/settings/api-keys](https://agentverse.ai/settings/api-keys)
-2. Generate your API key
-3. Set the key:
-   ```bash
-   echo 'AGENTVERSE_API_KEY=your-key-here' >> ~/.fetchcoder/.env
-   ```
+### Method 2: Configuration File
+Create or edit `~/.fetchcoder/.env`:
+```bash
+echo 'ASI1_API_KEY=your-asi1-key-here' >> ~/.fetchcoder/.env
+echo 'AGENTVERSE_API_KEY=your-agentverse-key-here' >> ~/.fetchcoder/.env
+```
+
+### Method 3: Environment Variables
+Add to your `~/.bashrc` or `~/.zshrc`:
+```bash
+export ASI1_API_KEY="your-asi1-key-here"
+export AGENTVERSE_API_KEY="your-agentverse-key-here"
+```
+
+### Configuration Priority
+FetchCoder loads API keys in this order (first found wins):
+1. Environment variables
+2. User config: `~/.fetchcoder/.env`
+3. VS Code settings (set via Settings Panel)
+4. Default test keys (built-in fallback)
+
+**Note**: Custom API keys enable full agent network capabilities, including multiple agent services and connections to the Fetch.ai decentralized network.
 
 ## 🐛 Troubleshooting
 
@@ -320,6 +364,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 
 ## 💡 Tips
 
+- **Configure API keys**: Click ⚙️ in the chat panel to set your custom API keys for enhanced capabilities
 - **Context is key**: The extension automatically includes relevant open files in your requests
 - **Attach files for precision**: Use drag-and-drop (hold Shift), context menu, or chat buttons to attach specific files/folders for more accurate responses
 - **Workspace awareness**: FetchCoder automatically works in your current workspace folder - files are created/modified in the right location
@@ -329,6 +374,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 - **Compose for big changes**: Use Compose Mode instead of Chat for multi-file modifications
 - **Keyboard shortcuts**: Learn the shortcuts to speed up your workflow
 - **Progress indicators**: Watch the live progress updates to see what FetchCoder is doing in real-time
+- **Clear chat easily**: Click the 🗑️ button to instantly clear chat history (no confirmation required)
 
 ## 🙏 Acknowledgments
 

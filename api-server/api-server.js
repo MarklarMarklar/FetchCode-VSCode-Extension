@@ -53,7 +53,7 @@ function parseBody(req) {
   });
 }
 
-async function executeFetchCoder(message, agent = 'general', context = {}, workspacePath = null, history = null) {
+async function executeFetchCoder(message, agent = 'general', context = {}, workspacePath = null, history = null, apiKeys = {}) {
   return new Promise((resolve, reject) => {
     const args = ['run'];
     
@@ -108,13 +108,26 @@ async function executeFetchCoder(message, agent = 'general', context = {}, works
     log(`Executing: echo "<message with history>" | ${FETCHCODER_BIN} ${args.join(' ')}`);
     log(`Working directory: ${cwd}, History: ${history ? history.length + ' messages' : 'none'}`);
     
+    // Build environment with API keys if provided
+    const env = {
+      ...process.env,
+      HOME: process.env.HOME,
+      PATH: process.env.PATH
+    };
+    
+    // Add API keys to environment if provided
+    if (apiKeys.asi1ApiKey) {
+      env.ASI1_API_KEY = apiKeys.asi1ApiKey;
+      log('Using ASI1_API_KEY from request headers');
+    }
+    if (apiKeys.agentverseApiKey) {
+      env.AGENTVERSE_API_KEY = apiKeys.agentverseApiKey;
+      log('Using AGENTVERSE_API_KEY from request headers');
+    }
+    
     const child = spawn(FETCHCODER_BIN, args, {
       cwd: cwd,
-      env: {
-        ...process.env,
-        HOME: process.env.HOME,
-        PATH: process.env.PATH
-      }
+      env: env
     });
     
     let stdout = '';
@@ -178,7 +191,7 @@ async function executeFetchCoder(message, agent = 'general', context = {}, works
 }
 
 // Streaming version that sends progress updates
-function executeFetchCoderStreaming(message, agent, context, workspacePath, history, onProgress) {
+function executeFetchCoderStreaming(message, agent, context, workspacePath, history, onProgress, apiKeys = {}) {
   return new Promise((resolve, reject) => {
     const args = ['run'];
     
@@ -228,13 +241,26 @@ function executeFetchCoderStreaming(message, agent, context, workspacePath, hist
     const cwd = workspacePath || process.cwd();
     log(`Streaming execution in: ${cwd}, History: ${history ? history.length + ' messages' : 'none'}`);
     
+    // Build environment with API keys if provided
+    const env = {
+      ...process.env,
+      HOME: process.env.HOME,
+      PATH: process.env.PATH
+    };
+    
+    // Add API keys to environment if provided
+    if (apiKeys.asi1ApiKey) {
+      env.ASI1_API_KEY = apiKeys.asi1ApiKey;
+      log('Using ASI1_API_KEY from request headers');
+    }
+    if (apiKeys.agentverseApiKey) {
+      env.AGENTVERSE_API_KEY = apiKeys.agentverseApiKey;
+      log('Using AGENTVERSE_API_KEY from request headers');
+    }
+    
     const child = spawn(FETCHCODER_BIN, args, {
       cwd: cwd,
-      env: {
-        ...process.env,
-        HOME: process.env.HOME,
-        PATH: process.env.PATH
-      }
+      env: env
     });
     
     let stdout = '';
@@ -330,7 +356,13 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       
-      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, History: ${history ? history.length : 0} messages, Context files: ${context && context.files ? context.files.length : 0}, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
+      // Extract API keys from headers
+      const apiKeys = {
+        asi1ApiKey: req.headers['x-asi1-api-key'] || '',
+        agentverseApiKey: req.headers['x-agentverse-api-key'] || ''
+      };
+      
+      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, History: ${history ? history.length : 0} messages, Context files: ${context && context.files ? context.files.length : 0}, Message: ${message.substring(0, 50)}..., Stream: ${stream}, Has API keys: ${!!(apiKeys.asi1ApiKey || apiKeys.agentverseApiKey)}`);
       
       if (context && context.files && context.files.length > 0) {
         log(`  Files attached: ${context.files.map(f => f.path).join(', ')}`);
@@ -359,7 +391,7 @@ const server = http.createServer(async (req, res) => {
             // Stream content tokens
             res.write(`data: ${JSON.stringify({ type: 'content', token: event.data })}\n\n`);
           }
-        });
+        }, apiKeys);
         
         // Send completion
         res.write('data: [DONE]\n\n');

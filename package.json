@@ -2,7 +2,7 @@
   "name": "fetchcoder-vscode",
   "displayName": "FetchCoder",
   "description": "AI coding assistant powered by FetchCoder - chat, compose, and code with AI",
-  "version": "0.4.0",
+  "version": "0.5.3",
   "publisher": "MarklarMarklar",
   "icon": "images/icon.png",
   "repository": {
@@ -127,6 +127,11 @@
       {
         "command": "fetchcoder.addFolderToChat",
         "title": "FetchCoder: Add to Chat Context"
+      },
+      {
+        "command": "fetchcoder.openSettings",
+        "title": "FetchCoder: Open Settings",
+        "icon": "$(gear)"
       }
     ],
     "keybindings": [
@@ -199,6 +204,16 @@
           "type": "boolean",
           "default": true,
           "description": "Enable streaming responses for real-time chat"
+        },
+        "fetchcoder.asi1ApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "ASI1 API Key (will be set as ASI1_API_KEY environment variable)"
+        },
+        "fetchcoder.agentverseApiKey": {
+          "type": "string",
+          "default": "",
+          "description": "Agentverse API Key (will be set as AGENTVERSE_API_KEY environment variable)"
         }
       }
     },

@@ -6,6 +6,8 @@ export interface FetchCoderConfiguration {
     autoContextFiles: number;
     enableInlineActions: boolean;
     streamResponses: boolean;
+    asi1ApiKey: string;
+    agentverseApiKey: string;
 }
 
 export class FetchCoderConfig {
@@ -32,7 +34,9 @@ export class FetchCoderConfig {
             defaultAgent: this.get('defaultAgent'),
             autoContextFiles: this.get('autoContextFiles'),
             enableInlineActions: this.get('enableInlineActions'),
-            streamResponses: this.get('streamResponses')
+            streamResponses: this.get('streamResponses'),
+            asi1ApiKey: this.get('asi1ApiKey'),
+            agentverseApiKey: this.get('agentverseApiKey')
         };
     }
 

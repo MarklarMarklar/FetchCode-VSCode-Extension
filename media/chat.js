@@ -5,6 +5,7 @@
     const chatInput = document.getElementById('chatInput');
     const sendBtn = document.getElementById('sendBtn');
     const clearBtn = document.getElementById('clearBtn');
+    const settingsBtn = document.getElementById('settingsBtn');
     const agentSelector = document.getElementById('agentSelector');
     const attachFileBtn = document.getElementById('attachFileBtn');
     const attachFolderBtn = document.getElementById('attachFolderBtn');
@@ -48,10 +49,12 @@
     });
 
     clearBtn.addEventListener('click', () => {
-        if (confirm('Clear chat history?')) {
             chatMessages.innerHTML = '';
             vscode.postMessage({ type: 'clearHistory' });
-        }
+    });
+
+    settingsBtn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'openSettings' });
     });
 
     agentSelector.addEventListener('change', (e) => {

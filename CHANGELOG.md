@@ -5,6 +5,35 @@ All notable changes to the FetchCoder VS Code extension will be documented in th
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [0.5.3] - 2025-11-10
+
+### Added
+- **⚙️ Settings Panel**: New built-in settings UI accessible via gear icon (⚙️) in chat header
+  - Configure ASI1 and Agentverse API keys directly in VS Code
+  - Set API server URL
+  - Configure default agent and auto-context files
+  - Toggle features (streaming responses, inline actions)
+  - Test connection button to verify API server connectivity
+- **API Key Configuration**: Support for setting API keys via VS Code settings
+  - Keys are properly passed to FetchCoder CLI as environment variables (`ASI1_API_KEY`, `AGENTVERSE_API_KEY`)
+  - Follows FetchCoder's configuration priority (env vars → user config → VS Code settings → defaults)
+  - Enables full agent network capabilities and Fetch.ai decentralized network access
+
+### Changed
+- **Renamed API Key**: Changed from `fetchaiApiKey` to `asi1ApiKey` to match FetchCoder's documentation
+- **API Server Enhancement**: Now properly extracts API keys from HTTP headers and passes them as environment variables to CLI
+- **Clear Chat Button**: Removed confirmation dialog - now clears instantly with a single click
+
+### Fixed
+- API keys are now correctly passed to FetchCoder CLI processes via environment variables
+- API server properly propagates API keys from extension to CLI for each request
+
+### Technical Details
+- Added `settingsPanel.ts` for settings UI management
+- Created `settings.css` and `settings.js` for settings panel styling and interaction
+- Updated API server to read headers and inject environment variables
+- Enhanced `FetchCoderClient` to send proper API key headers
+
 ## [0.2.0] - 2025-11-10
 
 ### Changed - SIMPLIFIED APPROACH! 🎉
