@@ -2,7 +2,7 @@
 
 > AI-powered coding assistant that brings FetchCoder directly into VS Code
 
-[![Version](https://img.shields.io/badge/version-0.1.0-blue.svg)](https://github.com/fetchai/fetchcoder-vscode)
+[![Version](https://img.shields.io/badge/version-0.3.2-blue.svg)](https://github.com/fetchai/fetchcoder-vscode)
 [![License](https://img.shields.io/badge/license-MIT-green.svg)](LICENSE)
 
 FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationlab.fetch.ai/resources/docs/fetchcoder/overview) AI coding agent into Visual Studio Code, providing a Cursor-like experience with chat, compose mode, and intelligent code actions.
@@ -19,6 +19,10 @@ FetchCoder for VS Code integrates the powerful [FetchCoder](https://innovationla
 - Multiple specialized agents
 - Workspace-aware: automatically works in your project directory
 - Live progress updates showing tool calls and file operations
+- **File/Folder Attachments**: Add context by attaching files or folders using multiple methods:
+  - **Chat Interface**: Click the 📄 or 📁 buttons in the chat panel
+  - **Context Menu**: Right-click files/folders in Explorer → "FetchCoder: Add to Chat Context"
+  - **Drag & Drop**: Drag files/folders from Explorer into the chat panel (**hold Shift** to prevent opening in editor)
 
 ### 🎨 Compose Mode
 - Multi-file editing with AI assistance
@@ -117,6 +121,27 @@ The server runs at `http://localhost:3000` and starts automatically when you ope
 - Use keyboard shortcut: `Ctrl+Shift+F C` (Mac: `Cmd+Shift+F C`)
 - Or command palette: `FetchCoder: Open Chat`
 - Or click the FetchCoder icon in the activity bar
+
+### Attaching Files/Folders to Chat
+Add files or folders as context for more accurate AI responses. You can attach in three ways:
+
+**1. From Chat Interface:**
+- Click the 📄 button to attach files
+- Click the 📁 button to attach folders
+- Attached items appear in the "📎 Attached Context" section
+
+**2. From Context Menu:**
+- Right-click any file in the Explorer
+- Select "FetchCoder: Add to Chat Context"
+- Or right-click a folder and select the same option
+
+**3. Drag and Drop:**
+- Drag files/folders from the Explorer
+- Drop them into the chat panel
+- **Important**: Hold **Shift** while dropping to prevent opening the file in the editor
+- Files appear instantly in the attachments section
+
+Attached files/folders are automatically included when you send messages, giving FetchCoder direct access to read and reference them.
 
 ### Using Compose Mode
 1. Press `Ctrl+Shift+F M` (Mac: `Cmd+Shift+F M`)
@@ -293,6 +318,7 @@ This project is licensed under the MIT License - see the [LICENSE](LICENSE) file
 ## 💡 Tips
 
 - **Context is key**: The extension automatically includes relevant open files in your requests
+- **Attach files for precision**: Use drag-and-drop (hold Shift), context menu, or chat buttons to attach specific files/folders for more accurate responses
 - **Workspace awareness**: FetchCoder automatically works in your current workspace folder - files are created/modified in the right location
 - **Conversational context**: The chat remembers your conversation history, so you can ask follow-up questions naturally
 - **Track changes**: Check the Diff Viewer to see exactly what FetchCoder modified in your project

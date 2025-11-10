@@ -46,6 +46,22 @@ body {
     background-color: var(--vscode-dropdown-listBackground);
 }
 
+.agent-selector option {
+    background-color: var(--vscode-dropdown-listBackground) !important;
+    color: var(--vscode-dropdown-foreground) !important;
+}
+
+/* Force dark theme on dropdown list - some browsers need this */
+.agent-selector:active,
+.agent-selector:focus {
+    background-color: var(--vscode-dropdown-background);
+    color: var(--vscode-dropdown-foreground);
+}
+
+.agent-selector:focus {
+    outline: 1px solid var(--vscode-focusBorder);
+}
+
 .btn-icon {
     padding: 4px 8px;
     background-color: transparent;
@@ -392,5 +408,30 @@ body {
 .btn-icon-small:hover {
     opacity: 1;
     background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+/* Drag and drop visual feedback */
+.chat-container.drag-active {
+    position: relative;
+}
+
+.chat-container.drag-active::before {
+    content: '📎 Drop files or folders here to attach';
+    position: absolute;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 122, 204, 0.1);
+    border: 2px dashed var(--vscode-button-background);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--vscode-button-background);
+    z-index: 1000;
+    pointer-events: none;
+    backdrop-filter: blur(2px);
 }
 

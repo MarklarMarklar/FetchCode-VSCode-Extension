@@ -78,6 +78,99 @@
         vscode.postMessage({ type: 'attachFolder' });
     });
 
+    // Drag and drop support
+    const chatContainer = document.querySelector('.chat-container');
+    let dragCounter = 0; // Track nested drag events
+
+    // Prevent default drag behaviors on the whole container - use capture phase
+    chatContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        e.dataTransfer.dropEffect = 'copy';
+    }, true);
+
+    chatContainer.addEventListener('dragenter', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter++;
+        
+        // Add visual feedback
+        if (dragCounter === 1) {
+            chatContainer.classList.add('drag-active');
+        }
+    }, true);
+
+    chatContainer.addEventListener('dragleave', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter--;
+        
+        // Remove visual feedback when fully leaving
+        if (dragCounter === 0) {
+            chatContainer.classList.remove('drag-active');
+        }
+    }, true);
+
+    chatContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        dragCounter = 0;
+        chatContainer.classList.remove('drag-active');
+        
+        // Get the dropped items
+        const dataTransfer = e.dataTransfer;
+        
+        // Try multiple methods to extract URIs
+        let uris = [];
+        
+        // Method 1: Try text/uri-list
+        if (dataTransfer.types.includes('text/uri-list')) {
+            const uriList = dataTransfer.getData('text/uri-list');
+            if (uriList) {
+                uris = uriList.split('\n').filter(uri => uri.trim() && !uri.startsWith('#'));
+                if (uris.length > 0) {
+                    vscode.postMessage({
+                        type: 'dropFiles',
+                        uris: uris
+                    });
+                    return;
+                }
+            }
+        }
+        
+        // Method 2: Try items API
+        if (dataTransfer.items && dataTransfer.items.length > 0) {
+            const items = Array.from(dataTransfer.items);
+            let processedCount = 0;
+            
+            items.forEach(item => {
+                if (item.kind === 'string' && item.type === 'text/uri-list') {
+                    item.getAsString((uri) => {
+                        if (uri && uri.trim()) {
+                            uris.push(uri.trim());
+                        }
+                        processedCount++;
+                        
+                        // When all items are processed, send to extension
+                        if (processedCount === items.length && uris.length > 0) {
+                            vscode.postMessage({
+                                type: 'dropFiles',
+                                uris: uris
+                            });
+                            // Don't show processing message - the extension will show proper notifications
+                        }
+                    });
+                } else {
+                    processedCount++;
+                }
+            });
+            
+            if (processedCount === items.length && uris.length === 0) {
+                showNotification('Could not process dropped items. Try using the attach buttons instead.');
+            }
+        }
+    }, true);
+
     // Handle messages from extension
     window.addEventListener('message', event => {
         const message = event.data;

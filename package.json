@@ -2,7 +2,7 @@
   "name": "fetchcoder-vscode",
   "displayName": "FetchCoder",
   "description": "AI coding assistant powered by FetchCoder - chat, compose, and code with AI",
-  "version": "0.2.0",
+  "version": "0.3.2",
   "publisher": "MarklarMarklar",
   "icon": "images/icon.png",
   "repository": {
@@ -62,6 +62,22 @@
       {
         "command": "fetchcoder.switchAgent",
         "title": "FetchCoder: Switch Agent"
+      },
+      {
+        "command": "fetchcoder.useGeneralAgent",
+        "title": "FetchCoder: Use General Agent"
+      },
+      {
+        "command": "fetchcoder.useBuildAgent",
+        "title": "FetchCoder: Use Build Agent"
+      },
+      {
+        "command": "fetchcoder.usePlanAgent",
+        "title": "FetchCoder: Use Plan Agent"
+      },
+      {
+        "command": "fetchcoder.useAgentverseAgent",
+        "title": "FetchCoder: Use Agentverse Agent"
       },
       {
         "command": "fetchcoder.clearHistory",

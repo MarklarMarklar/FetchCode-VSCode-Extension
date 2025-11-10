@@ -79,6 +79,9 @@ export class ChatPanel {
                     case 'removeAttachment':
                         this.handleRemoveAttachment(message.path, message.isFolder);
                         break;
+                    case 'dropFiles':
+                        await this.handleDropFiles(message.uris);
+                        break;
                 }
             },
             null,
@@ -333,6 +336,83 @@ export class ChatPanel {
         });
     }
 
+    private async handleDropFiles(uris: string[]) {
+        if (!uris || uris.length === 0) {
+            return;
+        }
+
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+
+        // Convert URI strings to VS Code URIs and process each
+        for (const uriString of uris) {
+            try {
+                // Handle different URI formats
+                let uri: vscode.Uri;
+                if (uriString.startsWith('vscode-remote://')) {
+                    // WSL/Remote URI - parse directly, VS Code knows how to handle these
+                    uri = vscode.Uri.parse(uriString);
+                } else if (uriString.startsWith('file://')) {
+                    // Already a proper file URI
+                    uri = vscode.Uri.parse(uriString);
+                } else if (uriString.startsWith('vscode-resource://')) {
+                    // VS Code resource URI
+                    uri = vscode.Uri.parse(uriString.replace('vscode-resource://', 'file://'));
+                } else {
+                    // Assume it's a file path
+                    uri = vscode.Uri.file(uriString);
+                }
+                
+                // Check if file/folder exists
+                const stat = await vscode.workspace.fs.stat(uri);
+                
+                // Get relative path from workspace
+                const relativePath = vscode.workspace.asRelativePath(uri);
+                
+                // Check if it's a file or folder
+                if (stat.type === vscode.FileType.Directory) {
+                    // It's a folder
+                    if (!this.attachedFolders.includes(relativePath)) {
+                        this.attachedFolders.push(relativePath);
+                        successCount++;
+                    }
+                } else if (stat.type === vscode.FileType.File) {
+                    // It's a file
+                    if (!this.attachedFiles.includes(relativePath)) {
+                        this.attachedFiles.push(relativePath);
+                        successCount++;
+                    }
+                }
+            } catch (error: any) {
+                console.error('Error processing dropped file:', uriString, error);
+                errorCount++;
+                vscode.window.showErrorMessage(`Failed to attach: ${error.message}`);
+            }
+        }
+        
+        // Update UI with new attachments
+        this.updateAttachmentsUI();
+        
+        // Show success message
+        if (successCount > 0) {
+            vscode.window.showInformationMessage(
+                `Attached ${successCount} item(s) to chat`
+            );
+        } else if (errorCount > 0) {
+            vscode.window.showWarningMessage(
+                `Failed to attach ${errorCount} item(s)`
+            );
+        } else {
+            vscode.window.showInformationMessage('Items already attached');
+        }
+    }
+
     // No longer needed - we just add paths to the message now
     // FetchCoder will use its own tools to read the files
 
@@ -392,12 +472,14 @@ export class ChatPanel {
     }
 
     private getHtmlContent(): string {
+        // Add cache busting to force reload of resources
+        const timestamp = Date.now();
         const scriptUri = this.panel.webview.asWebviewUri(
             vscode.Uri.joinPath(this.extensionUri, 'media', 'chat.js')
-        );
+        ) + `?v=${timestamp}`;
         const styleUri = this.panel.webview.asWebviewUri(
             vscode.Uri.joinPath(this.extensionUri, 'media', 'chat.css')
-        );
+        ) + `?v=${timestamp}`;
 
         return `<!DOCTYPE html>
 <html lang="en">
