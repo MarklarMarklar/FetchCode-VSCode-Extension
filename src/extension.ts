@@ -60,6 +60,21 @@ export function activate(context: vscode.ExtensionContext) {
         })
     );
     
+    // Register context menu commands for adding files/folders to chat
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.addFileToChat', (uri: vscode.Uri) => {
+            const chatPanel = ChatPanel.createOrShow(context.extensionUri);
+            chatPanel.addFileAttachment(uri);
+        })
+    );
+
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.addFolderToChat', (uri: vscode.Uri) => {
+            const chatPanel = ChatPanel.createOrShow(context.extensionUri);
+            chatPanel.addFolderAttachment(uri);
+        })
+    );
+    
     // Test command to manually scan for changes
     context.subscriptions.push(
         vscode.commands.registerCommand('fetchcoder.testScanChanges', async () => {
@@ -149,19 +164,9 @@ export function activate(context: vscode.ExtensionContext) {
 async function autoSetupApiServer(context: vscode.ExtensionContext) {
     const status = await apiServerManager.getStatus();
     
-    // Check if FetchCoder CLI is installed
-    if (!apiServerManager.isFetchCoderCliInstalled()) {
-        const selection = await vscode.window.showWarningMessage(
-            'FetchCoder CLI is not installed. Please install it first.',
-            'Install Instructions',
-            'Dismiss'
-        );
-        
-        if (selection === 'Install Instructions') {
-            vscode.env.openExternal(vscode.Uri.parse('https://innovationlab.fetch.ai/resources/docs/fetchcoder/overview'));
-        }
-        return;
-    }
+    // Note: We skip the CLI check here because VS Code may not have the same PATH
+    // as the user's shell. The API server will use 'fetchcoder' from PATH when it spawns.
+    // If fetchcoder is not available, the API calls will fail with a clear error message.
 
     // If not installed, offer to set up
     if (!status.installed) {

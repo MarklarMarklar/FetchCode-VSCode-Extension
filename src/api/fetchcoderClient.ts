@@ -100,6 +100,15 @@ export class FetchCoderClient {
 
     async sendMessageStreaming(request: ChatRequest, callback: StreamCallback): Promise<void> {
         try {
+            const payload = {
+                message: request.message,
+                agent: request.agent || this.currentAgent,
+                context: request.context,
+                history: request.history,
+                stream: true,
+                workspacePath: request.context?.workspacePath
+            };
+            
             const response = await fetch(`${this.baseUrl}/api/chat`, {
                 method: 'POST',
                 headers: {
@@ -108,14 +117,7 @@ export class FetchCoderClient {
                     // eslint-disable-next-line @typescript-eslint/naming-convention
                     'Accept': 'text/event-stream'
                 },
-                body: JSON.stringify({
-                    message: request.message,
-                    agent: request.agent || this.currentAgent,
-                    context: request.context,
-                    history: request.history,
-                    stream: true,
-                    workspacePath: request.context?.workspacePath
-                })
+                body: JSON.stringify(payload)
             });
 
             if (!response.ok) {

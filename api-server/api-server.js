@@ -14,7 +14,8 @@ const path = require('path');
 
 const PORT = process.env.PORT || 3000;
 const HOST = process.env.HOST || '127.0.0.1';
-const FETCHCODER_BIN = path.join(process.env.HOME, '.fetchcoder', 'bin', 'fetchcoder');
+// Use fetchcoder from PATH, fallback to ~/.fetchcoder/bin/fetchcoder
+const FETCHCODER_BIN = process.env.FETCHCODER_BIN || 'fetchcoder';
 
 // Session storage for managing conversations
 // Maps workspacePath -> sessionId
@@ -52,7 +53,7 @@ function parseBody(req) {
   });
 }
 
-async function executeFetchCoder(message, agent = 'general', context = [], workspacePath = null, history = null) {
+async function executeFetchCoder(message, agent = 'general', context = {}, workspacePath = null, history = null) {
   return new Promise((resolve, reject) => {
     const args = ['run'];
     
@@ -61,12 +62,39 @@ async function executeFetchCoder(message, agent = 'general', context = [], works
       args.push('--agent', agent);
     }
     
-    // Build full message with conversation history
+    // Build full message with context files and conversation history
     let fullMessage = '';
+    
+    // Add file context if provided
+    if (context && context.files && context.files.length > 0) {
+      fullMessage += '='.repeat(80) + '\n';
+      fullMessage += 'IMPORTANT: The user has attached the following file(s) for this conversation.\n';
+      fullMessage += 'When the user refers to "this file", "these files", "the attached file(s)", or asks\n';
+      fullMessage += 'questions without specifying a filename, they are referring to THESE files:\n';
+      fullMessage += '='.repeat(80) + '\n\n';
+      
+      context.files.forEach((file, index) => {
+        fullMessage += `📎 ATTACHED FILE ${index + 1}: ${file.path}\n`;
+        fullMessage += '-'.repeat(80) + '\n';
+        fullMessage += `${file.content}\n`;
+        fullMessage += '-'.repeat(80) + '\n\n';
+      });
+      
+      if (context.files.length === 1) {
+        fullMessage += `NOTE: When the user says "this file" or "the file", they mean: ${context.files[0].path}\n\n`;
+      } else {
+        fullMessage += `NOTE: The user has attached ${context.files.length} files. When they say "these files",\n`;
+        fullMessage += `they mean: ${context.files.map(f => f.path).join(', ')}\n\n`;
+      }
+      fullMessage += '='.repeat(80) + '\n\n';
+      
+      log(`Including ${context.files.length} file(s) in context: ${context.files.map(f => f.path).join(', ')}`);
+    }
+    
     if (history && history.length > 0) {
       // Include last few messages for context (limit to avoid token limits)
       const recentHistory = history.slice(-6); // Last 3 exchanges (6 messages)
-      fullMessage = 'Previous conversation:\n';
+      fullMessage += 'Previous conversation:\n';
       recentHistory.forEach(msg => {
         fullMessage += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
       });
@@ -158,11 +186,38 @@ function executeFetchCoderStreaming(message, agent, context, workspacePath, hist
       args.push('--agent', agent);
     }
     
-    // Build full message with conversation history
+    // Build full message with context files and conversation history
     let fullMessage = '';
+    
+    // Add file context if provided
+    if (context && context.files && context.files.length > 0) {
+      fullMessage += '='.repeat(80) + '\n';
+      fullMessage += 'IMPORTANT: The user has attached the following file(s) for this conversation.\n';
+      fullMessage += 'When the user refers to "this file", "these files", "the attached file(s)", or asks\n';
+      fullMessage += 'questions without specifying a filename, they are referring to THESE files:\n';
+      fullMessage += '='.repeat(80) + '\n\n';
+      
+      context.files.forEach((file, index) => {
+        fullMessage += `📎 ATTACHED FILE ${index + 1}: ${file.path}\n`;
+        fullMessage += '-'.repeat(80) + '\n';
+        fullMessage += `${file.content}\n`;
+        fullMessage += '-'.repeat(80) + '\n\n';
+      });
+      
+      if (context.files.length === 1) {
+        fullMessage += `NOTE: When the user says "this file" or "the file", they mean: ${context.files[0].path}\n\n`;
+      } else {
+        fullMessage += `NOTE: The user has attached ${context.files.length} files. When they say "these files",\n`;
+        fullMessage += `they mean: ${context.files.map(f => f.path).join(', ')}\n\n`;
+      }
+      fullMessage += '='.repeat(80) + '\n\n';
+      
+      log(`Including ${context.files.length} file(s) in context: ${context.files.map(f => f.path).join(', ')}`);
+    }
+    
     if (history && history.length > 0) {
       const recentHistory = history.slice(-6);
-      fullMessage = 'Previous conversation:\n';
+      fullMessage += 'Previous conversation:\n';
       recentHistory.forEach(msg => {
         fullMessage += `${msg.role === 'user' ? 'User' : 'Assistant'}: ${msg.content}\n`;
       });
@@ -275,7 +330,11 @@ const server = http.createServer(async (req, res) => {
         return;
       }
       
-      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, History: ${history ? history.length : 0} messages, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
+      log(`Chat request - Agent: ${agent || 'general'}, Workspace: ${workspacePath || 'none'}, History: ${history ? history.length : 0} messages, Context files: ${context && context.files ? context.files.length : 0}, Message: ${message.substring(0, 50)}..., Stream: ${stream}`);
+      
+      if (context && context.files && context.files.length > 0) {
+        log(`  Files attached: ${context.files.map(f => f.path).join(', ')}`);
+      }
       
       // Always use streaming for better progress feedback
       res.writeHead(200, {

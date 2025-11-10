@@ -285,3 +285,112 @@ body {
     background: var(--vscode-scrollbarSlider-hoverBackground);
 }
 
+/* Attachments UI */
+.attachments-container {
+    border-bottom: 1px solid var(--vscode-panel-border);
+    background-color: var(--vscode-sideBar-background);
+}
+
+.attachments-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 8px 16px;
+    border-bottom: 1px solid var(--vscode-panel-border);
+}
+
+.attachments-title {
+    font-size: 12px;
+    font-weight: 600;
+    color: var(--vscode-descriptionForeground);
+}
+
+.attachments-actions {
+    display: flex;
+    gap: 6px;
+}
+
+.btn-attach {
+    padding: 3px 8px;
+    background-color: var(--vscode-button-secondaryBackground);
+    color: var(--vscode-button-secondaryForeground);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 3px;
+    cursor: pointer;
+    font-size: 11px;
+}
+
+.btn-attach:hover {
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+
+.attachments-list {
+    padding: 8px 16px;
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    max-height: 150px;
+    overflow-y: auto;
+}
+
+.attachment-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 4px 8px;
+    background-color: var(--vscode-input-background);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+    font-size: 12px;
+}
+
+.attachment-icon {
+    flex-shrink: 0;
+}
+
+.attachment-path {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    color: var(--vscode-foreground);
+}
+
+.attachment-remove {
+    flex-shrink: 0;
+    background: transparent;
+    border: none;
+    color: var(--vscode-errorForeground);
+    cursor: pointer;
+    font-size: 14px;
+    padding: 0 4px;
+    opacity: 0.7;
+}
+
+.attachment-remove:hover {
+    opacity: 1;
+}
+
+.input-actions {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-right: 4px;
+}
+
+.btn-icon-small {
+    padding: 4px 6px;
+    background-color: transparent;
+    color: var(--vscode-foreground);
+    border: 1px solid var(--vscode-panel-border);
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 12px;
+    opacity: 0.7;
+}
+
+.btn-icon-small:hover {
+    opacity: 1;
+    background-color: var(--vscode-button-secondaryHoverBackground);
+}
+

@@ -2,7 +2,7 @@
   "name": "fetchcoder-vscode",
   "displayName": "FetchCoder",
   "description": "AI coding assistant powered by FetchCoder - chat, compose, and code with AI",
-  "version": "0.1.4",
+  "version": "0.2.0",
   "publisher": "MarklarMarklar",
   "icon": "images/icon.png",
   "repository": {
@@ -103,6 +103,14 @@
       {
         "command": "fetchcoder.reinstallApiServer",
         "title": "FetchCoder: Reinstall/Update API Server"
+      },
+      {
+        "command": "fetchcoder.addFileToChat",
+        "title": "FetchCoder: Add to Chat Context"
+      },
+      {
+        "command": "fetchcoder.addFolderToChat",
+        "title": "FetchCoder: Add to Chat Context"
       }
     ],
     "keybindings": [
@@ -222,6 +230,18 @@
         {
           "command": "fetchcoder.sendSelection",
           "when": "editorHasSelection"
+        }
+      ],
+      "explorer/context": [
+        {
+          "command": "fetchcoder.addFileToChat",
+          "when": "!explorerResourceIsFolder",
+          "group": "fetchcoder@1"
+        },
+        {
+          "command": "fetchcoder.addFolderToChat",
+          "when": "explorerResourceIsFolder",
+          "group": "fetchcoder@1"
         }
       ]
     }

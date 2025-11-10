@@ -6,6 +6,12 @@
     const sendBtn = document.getElementById('sendBtn');
     const clearBtn = document.getElementById('clearBtn');
     const agentSelector = document.getElementById('agentSelector');
+    const attachFileBtn = document.getElementById('attachFileBtn');
+    const attachFolderBtn = document.getElementById('attachFolderBtn');
+    const attachFileBtnBottom = document.getElementById('attachFileBtnBottom');
+    const attachFolderBtnBottom = document.getElementById('attachFolderBtnBottom');
+    const attachmentsContainer = document.getElementById('attachmentsContainer');
+    const attachmentsList = document.getElementById('attachmentsList');
     
     let currentStreamingMessage = null;
 
@@ -55,6 +61,23 @@
         });
     });
 
+    // Attach file/folder button handlers
+    attachFileBtn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'attachFile' });
+    });
+
+    attachFolderBtn.addEventListener('click', () => {
+        vscode.postMessage({ type: 'attachFolder' });
+    });
+
+    attachFileBtnBottom.addEventListener('click', () => {
+        vscode.postMessage({ type: 'attachFile' });
+    });
+
+    attachFolderBtnBottom.addEventListener('click', () => {
+        vscode.postMessage({ type: 'attachFolder' });
+    });
+
     // Handle messages from extension
     window.addEventListener('message', event => {
         const message = event.data;
@@ -93,6 +116,9 @@
             case 'workspaceInfo':
                 updateWorkspaceInfo(message.workspacePath);
                 break;
+            case 'updateAttachments':
+                updateAttachmentsUI(message.attachedFiles, message.attachedFolders);
+                break;
         }
     });
 
@@ -107,6 +133,59 @@
         }
         workspaceDiv.textContent = `📁 Working directory: ${workspacePath}`;
         workspaceDiv.title = workspacePath;
+    }
+
+    function updateAttachmentsUI(attachedFiles, attachedFolders) {
+        // Show/hide attachments container
+        const hasAttachments = attachedFiles.length > 0 || attachedFolders.length > 0;
+        attachmentsContainer.style.display = hasAttachments ? 'block' : 'none';
+
+        // Clear existing attachments
+        attachmentsList.innerHTML = '';
+
+        // Add folders
+        attachedFolders.forEach(folder => {
+            const item = createAttachmentItem('📁', folder, true);
+            attachmentsList.appendChild(item);
+        });
+
+        // Add files
+        attachedFiles.forEach(file => {
+            const item = createAttachmentItem('📄', file, false);
+            attachmentsList.appendChild(item);
+        });
+    }
+
+    function createAttachmentItem(icon, path, isFolder) {
+        const item = document.createElement('div');
+        item.className = 'attachment-item';
+        
+        const iconSpan = document.createElement('span');
+        iconSpan.className = 'attachment-icon';
+        iconSpan.textContent = icon;
+        
+        const pathSpan = document.createElement('span');
+        pathSpan.className = 'attachment-path';
+        pathSpan.textContent = path;
+        pathSpan.title = path;
+        
+        const removeBtn = document.createElement('button');
+        removeBtn.className = 'attachment-remove';
+        removeBtn.textContent = '✕';
+        removeBtn.title = 'Remove';
+        removeBtn.onclick = () => {
+            vscode.postMessage({
+                type: 'removeAttachment',
+                path: path,
+                isFolder: isFolder
+            });
+        };
+        
+        item.appendChild(iconSpan);
+        item.appendChild(pathSpan);
+        item.appendChild(removeBtn);
+        
+        return item;
     }
 
     // Notify extension that webview is ready

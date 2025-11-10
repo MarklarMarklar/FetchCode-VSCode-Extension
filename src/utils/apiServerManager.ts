@@ -3,7 +3,7 @@ import * as path from 'path';
 import * as fs from 'fs';
 import * as os from 'os';
 import * as http from 'http';
-import { spawn, ChildProcess } from 'child_process';
+import { spawn, ChildProcess, execSync } from 'child_process';
 
 export class ApiServerManager {
     private static instance: ApiServerManager;
@@ -271,9 +271,23 @@ export class ApiServerManager {
     }
 
     /**
-     * Check if FetchCoder CLI is installed
+     * Check if FetchCoder CLI is installed (in PATH or ~/.fetchcoder/bin)
      */
     public isFetchCoderCliInstalled(): boolean {
+        // Check if fetchcoder is in PATH
+        try {
+            const result = execSync('which fetchcoder || where fetchcoder', { 
+                encoding: 'utf8',
+                stdio: ['pipe', 'pipe', 'ignore']
+            });
+            if (result && result.trim()) {
+                return true;
+            }
+        } catch (error) {
+            // Command failed, fetchcoder not in PATH
+        }
+        
+        // Fallback: check ~/.fetchcoder/bin/fetchcoder
         const fetchcoderBin = path.join(this.fetchcoderDir, 'bin', 'fetchcoder');
         return fs.existsSync(fetchcoderBin);
     }

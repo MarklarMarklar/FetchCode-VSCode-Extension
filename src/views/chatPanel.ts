@@ -1,7 +1,7 @@
 import * as vscode from 'vscode';
 import * as path from 'path';
 import { getFetchCoderClient, ChatMessage, StreamCallback } from '../api/fetchcoderClient';
-import { FileOperations } from '../utils/fileOperations';
+import { FileOperations, FileContext } from '../utils/fileOperations';
 import { FileTracker } from '../utils/fileTracker';
 import { DiffPanel } from './diffPanel';
 
@@ -12,6 +12,8 @@ export class ChatPanel {
     private disposables: vscode.Disposable[] = [];
     private messageHistory: ChatMessage[] = [];
     private currentAgent: string = 'general';
+    private attachedFiles: string[] = []; // Store attached file paths
+    private attachedFolders: string[] = []; // Store attached folder paths
 
     public static createOrShow(extensionUri: vscode.Uri) {
         // Always use ViewColumn.Two to maintain split panel layout
@@ -68,6 +70,15 @@ export class ChatPanel {
                         // Send workspace info when webview is ready
                         await this.sendWorkspaceInfo();
                         break;
+                    case 'attachFile':
+                        await this.handleAttachFile();
+                        break;
+                    case 'attachFolder':
+                        await this.handleAttachFolder();
+                        break;
+                    case 'removeAttachment':
+                        this.handleRemoveAttachment(message.path, message.isFolder);
+                        break;
                 }
             },
             null,
@@ -90,10 +101,29 @@ export class ChatPanel {
         const fileTracker = FileTracker.getInstance();
         fileTracker.startTracking();
         
+        // SIMPLE APPROACH: Add file/folder paths directly to the message
+        let enhancedMessage = content;
+        
+        if (this.attachedFiles.length > 0 || this.attachedFolders.length > 0) {
+            enhancedMessage += '\n\n---\n';
+            enhancedMessage += 'Context files (please read these files):\n';
+            
+            // Add attached files
+            this.attachedFiles.forEach(file => {
+                enhancedMessage += `- ${file}\n`;
+            });
+            
+            // Add attached folders
+            this.attachedFolders.forEach(folder => {
+                enhancedMessage += `- ${folder}/ (folder - read all files in it)\n`;
+            });
+            
+        }
+        
         // Add user message to history
         this.messageHistory.push({
             role: 'user',
-            content: content
+            content: enhancedMessage
         });
 
         // Send typing indicator
@@ -101,14 +131,8 @@ export class ChatPanel {
             type: 'assistantTyping'
         });
 
-        // Get workspace context if enabled
+        // Get workspace context (no longer sending file contents)
         const context = await FileOperations.getWorkspaceContext();
-        
-        // Log workspace path for debugging
-        console.log('FetchCoder: Using workspace path:', context.workspacePath);
-        if (!context.workspacePath) {
-            console.warn('FetchCoder: No workspace path detected! Make sure a folder is opened.');
-        }
 
         try {
             // Stream the response
@@ -172,7 +196,7 @@ export class ChatPanel {
             };
 
             await client.sendMessageStreaming({
-                message: content,
+                message: enhancedMessage,
                 agent: this.currentAgent,
                 context: context,
                 history: this.messageHistory.slice(-10) // Last 10 messages for context
@@ -232,11 +256,128 @@ export class ChatPanel {
         });
     }
 
+    private async handleAttachFile() {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        const fileUris = await vscode.window.showOpenDialog({
+            canSelectFiles: true,
+            canSelectFolders: false,
+            canSelectMany: true,
+            defaultUri: workspaceFolder.uri,
+            openLabel: 'Attach File(s)'
+        });
+
+        if (fileUris && fileUris.length > 0) {
+            for (const fileUri of fileUris) {
+                const relativePath = vscode.workspace.asRelativePath(fileUri);
+                if (!this.attachedFiles.includes(relativePath)) {
+                    this.attachedFiles.push(relativePath);
+                }
+            }
+            this.updateAttachmentsUI();
+            vscode.window.showInformationMessage(`Attached ${fileUris.length} file(s) to chat context`);
+        }
+    }
+
+    private async handleAttachFolder() {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+
+        const folderUris = await vscode.window.showOpenDialog({
+            canSelectFiles: false,
+            canSelectFolders: true,
+            canSelectMany: true,
+            defaultUri: workspaceFolder.uri,
+            openLabel: 'Attach Folder(s)'
+        });
+
+        if (folderUris && folderUris.length > 0) {
+            for (const folderUri of folderUris) {
+                let relativePath = vscode.workspace.asRelativePath(folderUri);
+                
+                // If the folder IS the workspace root, use '.'
+                if (folderUri.fsPath === workspaceFolder.uri.fsPath) {
+                    relativePath = '.';
+                }
+                
+                if (!this.attachedFolders.includes(relativePath)) {
+                    this.attachedFolders.push(relativePath);
+                }
+            }
+            this.updateAttachmentsUI();
+            vscode.window.showInformationMessage(`Attached ${folderUris.length} folder(s) to chat context`);
+        }
+    }
+
+    private handleRemoveAttachment(path: string, isFolder: boolean) {
+        if (isFolder) {
+            this.attachedFolders = this.attachedFolders.filter(f => f !== path);
+        } else {
+            this.attachedFiles = this.attachedFiles.filter(f => f !== path);
+        }
+        this.updateAttachmentsUI();
+    }
+
+    private updateAttachmentsUI() {
+        this.panel.webview.postMessage({
+            type: 'updateAttachments',
+            attachedFiles: this.attachedFiles,
+            attachedFolders: this.attachedFolders
+        });
+    }
+
+    // No longer needed - we just add paths to the message now
+    // FetchCoder will use its own tools to read the files
+
     public sendMessage(message: string) {
         this.panel.webview.postMessage({
             type: 'injectMessage',
             message: message
         });
+    }
+
+    public addFileAttachment(uri: vscode.Uri) {
+        const relativePath = vscode.workspace.asRelativePath(uri);
+        if (!this.attachedFiles.includes(relativePath)) {
+            this.attachedFiles.push(relativePath);
+            this.updateAttachmentsUI();
+            this.panel.reveal(); // Bring chat panel to focus
+            vscode.window.showInformationMessage(`Added ${path.basename(relativePath)} to chat context`);
+        } else {
+            vscode.window.showInformationMessage(`${path.basename(relativePath)} is already attached`);
+        }
+    }
+
+    public addFolderAttachment(uri: vscode.Uri) {
+        const workspaceFolder = vscode.workspace.workspaceFolders?.[0];
+        if (!workspaceFolder) {
+            vscode.window.showErrorMessage('No workspace folder open');
+            return;
+        }
+        
+        // Convert to relative path from workspace root
+        let relativePath = vscode.workspace.asRelativePath(uri);
+        
+        // If the folder IS the workspace root, use empty string or '.'
+        if (uri.fsPath === workspaceFolder.uri.fsPath) {
+            relativePath = '.';
+        }
+        
+        if (!this.attachedFolders.includes(relativePath)) {
+            this.attachedFolders.push(relativePath);
+            this.updateAttachmentsUI();
+            this.panel.reveal(); // Bring chat panel to focus
+            vscode.window.showInformationMessage(`Added ${path.basename(relativePath)} folder to chat context`);
+        } else {
+            vscode.window.showInformationMessage(`${path.basename(relativePath)} folder is already attached`);
+        }
     }
 
     private disposePanel() {
@@ -281,8 +422,22 @@ export class ChatPanel {
                 <button id="clearBtn" class="btn-icon" title="Clear History">🗑️</button>
             </div>
         </div>
+        <div id="attachmentsContainer" class="attachments-container" style="display: none;">
+            <div class="attachments-header">
+                <span class="attachments-title">📎 Attached Context</span>
+                <div class="attachments-actions">
+                    <button id="attachFileBtn" class="btn-attach" title="Attach File">📄 File</button>
+                    <button id="attachFolderBtn" class="btn-attach" title="Attach Folder">📁 Folder</button>
+                </div>
+            </div>
+            <div id="attachmentsList" class="attachments-list"></div>
+        </div>
         <div id="chatMessages" class="chat-messages"></div>
         <div class="chat-input-container">
+            <div class="input-actions">
+                <button id="attachFileBtnBottom" class="btn-icon-small" title="Attach File">📄</button>
+                <button id="attachFolderBtnBottom" class="btn-icon-small" title="Attach Folder">📁</button>
+            </div>
             <textarea id="chatInput" class="chat-input" placeholder="Ask FetchCoder anything..." rows="3"></textarea>
             <button id="sendBtn" class="send-btn">Send</button>
         </div>
