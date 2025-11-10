@@ -40,9 +40,12 @@ export function registerChatCommands(
             const language = document.languageId;
             const message = `I have the following ${language} code:\n\n\`\`\`${language}\n${selectedText}\n\`\`\`\n\nWhat would you like to know about it?`;
             
-            // Wait a bit for the panel to initialize
+            // Send message to chat panel
             setTimeout(() => {
-                ChatPanel.createOrShow(context.extensionUri);
+                const panel = ChatPanel.createOrShow(context.extensionUri) as any;
+                if (panel && panel.sendMessage) {
+                    panel.sendMessage(message);
+                }
             }, 100);
         })
     );

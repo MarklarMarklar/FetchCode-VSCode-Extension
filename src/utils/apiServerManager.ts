@@ -64,22 +64,31 @@ export class ApiServerManager {
 
     /**
      * Install API server files from extension to ~/.fetchcoder/
+     * This will overwrite existing files to ensure updates are applied
      */
     public async install(): Promise<void> {
         const extensionPath = this.extensionContext.extensionPath;
         const apiServerSource = path.join(extensionPath, 'api-server');
+
+        // Stop server if it's running
+        if (await this.isRunning()) {
+            console.log('FetchCoder: Stopping API server before reinstall...');
+            await this.stop();
+            await new Promise(resolve => setTimeout(resolve, 1000)); // Wait for shutdown
+        }
 
         // Create .fetchcoder directory if it doesn't exist
         if (!fs.existsSync(this.fetchcoderDir)) {
             fs.mkdirSync(this.fetchcoderDir, { recursive: true });
         }
 
-        // Copy all API server files
+        // Copy all API server files (will overwrite existing)
+        console.log('FetchCoder: Installing/updating API server files...');
         await this.copyDirectory(apiServerSource, this.fetchcoderDir);
 
         // Make shell scripts executable (Unix-like systems)
         if (process.platform !== 'win32') {
-            const scripts = ['start-api-server.sh', 'stop-api-server.sh'];
+            const scripts = ['start-api-server.sh', 'stop-api-server.sh', 'start-server.sh'];
             for (const script of scripts) {
                 const scriptPath = path.join(this.fetchcoderDir, script);
                 if (fs.existsSync(scriptPath)) {
@@ -88,7 +97,17 @@ export class ApiServerManager {
             }
         }
 
+        // Write version file to track which version was installed
+        const packageJson = JSON.parse(
+            fs.readFileSync(path.join(extensionPath, 'package.json'), 'utf-8')
+        );
+        fs.writeFileSync(
+            path.join(this.fetchcoderDir, '.api-server-version'),
+            packageJson.version
+        );
+
         console.log('FetchCoder: API server files installed to', this.fetchcoderDir);
+        console.log('FetchCoder: Version:', packageJson.version);
     }
 
     /**

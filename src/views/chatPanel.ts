@@ -14,19 +14,18 @@ export class ChatPanel {
     private currentAgent: string = 'general';
 
     public static createOrShow(extensionUri: vscode.Uri) {
-        const column = vscode.window.activeTextEditor
-            ? vscode.window.activeTextEditor.viewColumn
-            : undefined;
+        // Always use ViewColumn.Two to maintain split panel layout
+        const column = vscode.ViewColumn.Two;
 
         if (ChatPanel.currentPanel) {
             ChatPanel.currentPanel.panel.reveal(column);
-            return;
+            return ChatPanel.currentPanel;
         }
 
         const panel = vscode.window.createWebviewPanel(
             'fetchcoderChat',
             'FetchCoder Chat',
-            column || vscode.ViewColumn.One,
+            column,
             {
                 enableScripts: true,
                 retainContextWhenHidden: true,
@@ -35,6 +34,7 @@ export class ChatPanel {
         );
 
         ChatPanel.currentPanel = new ChatPanel(panel, extensionUri);
+        return ChatPanel.currentPanel;
     }
 
     public static dispose() {

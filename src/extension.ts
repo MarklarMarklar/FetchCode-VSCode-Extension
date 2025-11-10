@@ -313,6 +313,43 @@ function registerApiServerCommands(context: vscode.ExtensionContext) {
             }
         })
     );
+
+    // Reinstall/Update API Server command
+    context.subscriptions.push(
+        vscode.commands.registerCommand('fetchcoder.reinstallApiServer', async () => {
+            try {
+                const confirm = await vscode.window.showWarningMessage(
+                    'This will reinstall the API server files. The server will be restarted. Continue?',
+                    'Yes, Reinstall',
+                    'Cancel'
+                );
+
+                if (confirm !== 'Yes, Reinstall') {
+                    return;
+                }
+
+                const success = await vscode.window.withProgress({
+                    location: vscode.ProgressLocation.Notification,
+                    title: 'Reinstalling FetchCoder API server...',
+                    cancellable: false
+                }, async (progress) => {
+                    progress.report({ message: 'Stopping server...' });
+                    await apiServerManager.install();
+                    
+                    progress.report({ message: 'Starting server...' });
+                    return await apiServerManager.start();
+                });
+
+                if (success) {
+                    vscode.window.showInformationMessage('✅ FetchCoder API server reinstalled and restarted!');
+                } else {
+                    vscode.window.showErrorMessage('API server reinstalled but failed to start. Try starting it manually.');
+                }
+            } catch (error: any) {
+                vscode.window.showErrorMessage(`Reinstall failed: ${error.message}`);
+            }
+        })
+    );
 }
 
 export function deactivate() {

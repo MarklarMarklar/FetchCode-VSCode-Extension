@@ -2,8 +2,9 @@
   "name": "fetchcoder-vscode",
   "displayName": "FetchCoder",
   "description": "AI coding assistant powered by FetchCoder - chat, compose, and code with AI",
-  "version": "0.1.1",
+  "version": "0.1.4",
   "publisher": "MarklarMarklar",
+  "icon": "images/icon.png",
   "repository": {
     "type": "git",
     "url": "https://github.com/MarklarMarklar/FetchCode-VSCode-Extension.git"
@@ -98,6 +99,10 @@
       {
         "command": "fetchcoder.checkApiServerStatus",
         "title": "FetchCoder: Check API Server Status"
+      },
+      {
+        "command": "fetchcoder.reinstallApiServer",
+        "title": "FetchCoder: Reinstall/Update API Server"
       }
     ],
     "keybindings": [
